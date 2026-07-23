@@ -3,7 +3,10 @@ fetch_posts.py
 
 This script connects to Bluesky and searches for recent posts that
 mention any of the topics listed in topics.json, then saves them into
-our local SQLite database, tagged with which topic matched.
+our local SQLite database, tagged with which topic matched. Each topic
+can pull up to MAX_POSTS_PER_TOPIC posts per run (paging through
+Bluesky's search results in batches of 100 -- Bluesky's per-request
+limit), so a busy topic isn't capped at just the first 100 matches.
 
 HOW TO RUN IT:
     python fetch_posts.py
@@ -32,9 +35,16 @@ from dotenv import load_dotenv
 from config import load_topics
 from db import get_connection, init_db
 
-# How many posts to ask Bluesky for in one go. 100 is the max Bluesky
-# allows per request.
+# How many posts to ask Bluesky for in one request. 100 is the max
+# Bluesky allows per request.
 POSTS_PER_REQUEST = 100
+
+# How many posts (across multiple paginated requests) to fetch per topic
+# in a single run. Bluesky's search caps each individual request at 100
+# posts, but paging through further results with a cursor lets us pull
+# more than that per run for busy topics. Raise this if a topic still
+# hits the cap regularly; each extra 100 costs one more API request.
+MAX_POSTS_PER_TOPIC = 500
 
 
 def get_client():
@@ -59,42 +69,66 @@ def get_client():
 def fetch_topic(client, conn, topic):
     """Search for one topic and save any new matching posts.
 
+    Bluesky caps each individual search request at 100 posts, so this
+    pages through further results (using the "cursor" Bluesky's search
+    API gives back) until it has looked at MAX_POSTS_PER_TOPIC posts, or
+    Bluesky runs out of matching posts to give us, whichever comes
+    first.
+
     Returns (saved_count, skipped_count).
     """
-    print(f"Searching for recent posts mentioning '{topic}'...")
-    response = client.app.bsky.feed.search_posts(
-        params={"q": topic, "limit": POSTS_PER_REQUEST}
-    )
-
     # "fetched_at" records when *we* ran this script, in UTC, using the
     # standard ISO 8601 text format (e.g. "2026-07-23T10:15:00+00:00").
     fetched_at = datetime.now(timezone.utc).isoformat()
     saved_count = 0
     skipped_count = 0
+    posts_seen = 0
+    next_page_cursor = None
 
-    for post in response.posts:
-        # INSERT OR IGNORE means: if a post with this "uri" is already
-        # in the table, just skip it instead of raising an error. This
-        # is what makes it safe to run the script over and over.
-        cursor = conn.execute(
-            """
-            INSERT OR IGNORE INTO posts
-                (uri, topic, text, author_handle, created_at, fetched_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                post.uri,
-                topic,
-                post.record.text,
-                post.author.handle,
-                post.record.created_at,
-                fetched_at,
-            ),
-        )
-        if cursor.rowcount == 1:
-            saved_count += 1
-        else:
-            skipped_count += 1
+    while posts_seen < MAX_POSTS_PER_TOPIC:
+        print(f"Searching for recent posts mentioning '{topic}'...")
+        params = {"q": topic, "limit": POSTS_PER_REQUEST}
+        if next_page_cursor:
+            params["cursor"] = next_page_cursor
+
+        response = client.app.bsky.feed.search_posts(params=params)
+
+        if not response.posts:
+            break
+
+        for post in response.posts:
+            # INSERT OR IGNORE means: if a post with this "uri" is
+            # already in the table, just skip it instead of raising an
+            # error. This is what makes it safe to run the script over
+            # and over.
+            db_cursor = conn.execute(
+                """
+                INSERT OR IGNORE INTO posts
+                    (uri, topic, text, author_handle, created_at, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    post.uri,
+                    topic,
+                    post.record.text,
+                    post.author.handle,
+                    post.record.created_at,
+                    fetched_at,
+                ),
+            )
+            if db_cursor.rowcount == 1:
+                saved_count += 1
+            else:
+                skipped_count += 1
+
+        posts_seen += len(response.posts)
+
+        # Stop paging once Bluesky has nothing more to give us, or gave
+        # us a partial page (a sign we've reached the end of the
+        # results it's willing to return).
+        if not response.cursor or len(response.posts) < POSTS_PER_REQUEST:
+            break
+        next_page_cursor = response.cursor
 
     return saved_count, skipped_count
 
