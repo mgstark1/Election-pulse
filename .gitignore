@@ -1,10 +1,11 @@
 # Secrets -- never commit your real Bluesky credentials
 .env
 
-# The local database and generated chart image (this is your data,
-# not code, so it doesn't need to be committed)
+# The local database, generated chart image, and pipeline log (this is
+# your data, not code, so it doesn't need to be committed)
 data/*.db
 data/*.png
+data/pipeline.log
 
 # Python virtual environment
 venv/
