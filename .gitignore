@@ -3,9 +3,11 @@
 
 # agent.py commits data/*.db, data/*.png, and data/agent_summary_log.txt
 # itself (see commit_and_push_data() in agent.py) so historical data
-# persists across runs even on ephemeral compute. Only the local-only
-# run_pipeline.sh log is excluded here.
+# persists across runs even on ephemeral compute. The raw cron
+# stdout/stderr redirect is local-only operational logging, not project
+# data, so it's excluded here (along with the old run_pipeline.sh log).
 data/pipeline.log
+data/agent_cron.log
 
 # Python virtual environment
 venv/
