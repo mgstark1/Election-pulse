@@ -1,4 +1,4 @@
-# Election Pulse
+# Election Pulse (Immigration - Phase 1)
 
 A UK General Election narrative tracker.
 
