@@ -2,24 +2,32 @@
 
 A UK General Election narrative tracker.
 
-**Current phase:** a simple, single-topic pipeline that tracks mentions of
-"immigration" on Bluesky. This is step one of a bigger project (see
-"Long-term vision" below) -- for now it just proves that we can fetch
-posts, save them, and see them on a chart.
+**Current phase:** a multi-topic pipeline that tracks mentions of several
+topics (see `topics.json`) on Bluesky, and can run itself as a single
+autonomous agent. This is step one of a bigger project (see "Long-term
+vision" below) -- for now it just proves that we can fetch posts, save
+them, chart them per topic, and summarize what changed.
 
 ## What's in this repo
 
+- `topics.json` -- the list of topics to track (edit this to add/remove
+  topics; everything else reads from it)
+- `config.py` -- shared helper that loads `topics.json`
 - `db.py` -- sets up the SQLite database (a single file, no server needed)
 - `fetch_posts.py` -- logs in to Bluesky and saves recent posts mentioning
-  "immigration" into the database
-- `chart.py` -- reads the database and draws a simple chart of how many
-  posts were made per hour, so you can see the data is real
-- `growth.py` -- compares today's mention count to yesterday's and prints
-  the percentage change, e.g. "Immigration: 45 mentions today vs 20
-  yesterday (+125%)"
-- `data/` -- where the database file (`election_pulse.db`) and the chart
-  image get saved. This folder is excluded from git (see `.gitignore`)
-  because it's data, not code.
+  each topic in `topics.json`, tagged by topic
+- `chart.py` -- reads the database and draws one chart per topic of how
+  many posts were made per hour, so you can see the data is real
+- `growth.py` -- compares today's mention count to yesterday's for each
+  topic and prints the percentage change, e.g. "Immigration: 45 mentions
+  today vs 20 yesterday (+125%)"
+- `agent.py` -- the single entry point: runs fetch -> chart -> growth for
+  every topic, asks the Anthropic API for a short natural-language
+  summary of what changed across topics, and commits the updated data
+  back to git so history persists even on ephemeral compute
+- `data/` -- where the database file (`election_pulse.db`), chart images,
+  and the agent's summary log get saved. `agent.py` commits these to git
+  itself (see "Automated commits" below).
 
 ## One-time setup
 
@@ -64,60 +72,109 @@ BLUESKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 
 `.env` is listed in `.gitignore`, so it will never be committed to git.
 
+### 4. (Optional) Add an Anthropic API key
+
+Only needed if you want `agent.py` to generate its natural-language
+summary. Get a key at <https://console.anthropic.com/> and add it to
+`.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without it, `agent.py` still runs the full fetch/chart/growth pipeline --
+it just skips the summary step and says so.
+
 ## Running it
 
-### Fetch posts
+### The easy way: run everything with agent.py
 
 ```bash
-python fetch_posts.py
+python agent.py
 ```
 
-This logs in to Bluesky, searches for recent posts mentioning
-"immigration", and saves any new ones into `data/election_pulse.db`.
-Posts you've already saved are automatically skipped, so it's safe to
-run this command as many times as you like -- e.g. run it by hand every
-hour or so over a day to build up a useful spread of data. (Automated
-scheduling isn't set up yet -- that's a later step.)
+This is the single entry point. For every topic listed in `topics.json`
+it fetches new posts, redraws that topic's chart, and computes its
+day-over-day growth -- then asks Claude for a short summary comparing
+what changed across all topics, e.g.:
 
-### View the chart
+```
+Immigration mentions up 40%, healthcare flat, economy down 12%.
+```
+
+Finally, it commits and pushes everything new under `data/` (the
+database, the chart images, and the summary log) back to git, so the
+historical data persists even if this script is run somewhere with no
+permanent local storage -- see "Automated commits" below.
+
+### Or run each step yourself
+
+You can still run the individual scripts by hand if you just want one
+piece:
 
 ```bash
-python chart.py
+python fetch_posts.py   # fetch new posts for every topic in topics.json
+python chart.py          # redraw data/mentions_over_time_<topic>.png for each topic
+python growth.py         # print today-vs-yesterday growth for each topic
 ```
 
-This reads everything in the database and saves a bar chart to
-`data/mentions_over_time.png` showing how many posts were made each
-hour. Open that image file to take a look. If it looks empty or sparse,
-run `fetch_posts.py` a few more times (ideally spread across a few
-hours) and try again.
+`fetch_posts.py` logs in to Bluesky once and searches for each topic in
+`topics.json` in turn, tagging every saved post with which topic
+matched. Posts you've already saved are automatically skipped (by their
+unique Bluesky URI), so it's safe to run any of these as many times as
+you like.
 
-### Check day-over-day growth
+`chart.py` saves one bar chart per topic, e.g.
+`data/mentions_over_time_immigration.png`, showing posts per hour. If a
+chart looks empty or sparse, run `fetch_posts.py` a few more times
+(ideally spread across a few hours) and try again.
 
-```bash
-python growth.py
-```
-
-This compares how many "immigration" posts were saved *today* vs
-*yesterday* and prints the percentage change, e.g.:
+`growth.py` prints one line per topic comparing today's mention count to
+yesterday's, e.g.:
 
 ```
 Immigration: 45 mention(s) today vs 20 yesterday (+125%)
 ```
 
 You'll need to have run `fetch_posts.py` on at least two different
-calendar days for this to have anything to compare -- otherwise it'll
-tell you there isn't enough data yet.
+calendar days for any topic to have something to compare -- otherwise
+it'll say there isn't enough data yet for that topic.
+
+### Adding or changing topics
+
+Edit `topics.json`:
+
+```json
+{
+  "topics": ["immigration", "healthcare", "economy"]
+}
+```
+
+Every script reads from this file, so adding a topic here is the only
+change needed to start tracking it.
+
+### Automated commits
+
+`agent.py` runs `git add data/ topics.json`, commits if anything
+changed, and pushes to whatever branch is currently checked out. This
+is meant to make it safe to run `agent.py` on a schedule (cron,
+GitHub Actions, a cloud job, etc.) with no persistent disk: each run's
+new posts, charts, and summary get pushed straight to git as the
+permanent record. If the push fails (e.g. someone else pushed first),
+it pulls with `--rebase` and retries once; if that also fails, it prints
+a warning and moves on rather than losing the run's data.
 
 ## Long-term vision (not built yet)
 
 This is just phase one. The eventual plan for Election Pulse is to:
 
-- Track multiple topics (immigration, housing, NHS, etc.), not just one
 - Pull posts from Bluesky and other sources automatically, every hour
 - Use an LLM to automatically cluster posts into themes/narratives
+  (today's topic list in `topics.json` is manually curated)
 - Rank topics by *growth rate*, not just raw volume, to surface
   emerging stories
-- Generate an AI-written explanation of why a topic is trending
+- Generate a richer AI-written explanation of why a topic is trending,
+  not just a one-line summary
 - Show it all on a dashboard with a "narrative lifecycle" timeline
 - Later, tag posts by the kind of community/account that posted them
   (e.g. youth-leaning vs. general accounts) as a proxy for age

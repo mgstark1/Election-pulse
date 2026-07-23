@@ -1,14 +1,12 @@
 """
 growth.py
 
-A simple script that compares how many "immigration" posts we saved
-*today* vs *yesterday*, and prints the percentage change.
+A script that compares how many posts we saved *today* vs *yesterday*
+for each tracked topic, and prints the percentage change per topic.
 
 This is an early, rough version of the "growth rate" idea from the
 long-term vision (ranking topics by how fast they're growing, not just
-raw volume). Right now there's only one topic and no ranking -- this
-script just answers the question "is immigration talk going up or down
-compared to yesterday?"
+raw volume).
 
 HOW TO RUN IT:
     python growth.py
@@ -21,18 +19,17 @@ anything useful to say.
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
+from config import load_topics
 from db import get_connection
 
-TOPIC = "immigration"
 
-
-def load_post_dates():
-    """Fetch every saved post's "created_at" timestamp for our topic,
+def load_post_dates(topic):
+    """Fetch every saved post's "created_at" timestamp for one topic,
     and return just the calendar date (in UTC) each post was made on.
     """
     conn = get_connection()
     rows = conn.execute(
-        "SELECT created_at FROM posts WHERE topic = ?", (TOPIC,)
+        "SELECT created_at FROM posts WHERE topic = ?", (topic,)
     ).fetchall()
     conn.close()
 
@@ -46,12 +43,19 @@ def load_post_dates():
     return dates
 
 
-def main():
-    post_dates = load_post_dates()
+def compute_growth(topic):
+    """Compute today-vs-yesterday growth for one topic.
+
+    Returns a dict describing the result. "status" is one of:
+        "no_data"              -- nothing saved for this topic yet
+        "insufficient_history" -- data doesn't go back to yesterday yet
+        "zero_yesterday"       -- yesterday had 0 posts (can't do a %)
+        "ok"                   -- growth_pct is populated
+    """
+    post_dates = load_post_dates(topic)
 
     if not post_dates:
-        print("No posts found in the database yet. Run fetch_posts.py first.")
-        return
+        return {"topic": topic, "status": "no_data"}
 
     # Count how many posts happened on each calendar day, e.g.
     # {date(2026, 7, 22): 20, date(2026, 7, 23): 45}
@@ -62,39 +66,69 @@ def main():
     earliest_day_we_have = min(post_dates)
 
     # We can only make a fair comparison if our data actually goes back
-    # as far as yesterday. If the oldest post we've saved is from today
-    # (e.g. we only just started running fetch_posts.py), we don't have
-    # a real "yesterday" to compare against yet.
+    # as far as yesterday.
     if earliest_day_we_have > yesterday:
-        print(
-            f"Not enough data yet to compare {TOPIC} mentions day over day.\n"
-            f"Our earliest saved post is from {earliest_day_we_have}, but we'd "
-            f"need data going back to {yesterday}. Keep running fetch_posts.py "
-            f"over the next day or so, then try again."
-        )
-        return
+        return {
+            "topic": topic,
+            "status": "insufficient_history",
+            "earliest_day": earliest_day_we_have,
+        }
 
     today_count = counts_by_day.get(today, 0)
     yesterday_count = counts_by_day.get(yesterday, 0)
 
     if yesterday_count == 0:
-        # We have coverage for yesterday, but happened to save zero
-        # matching posts that day. A percentage change from zero is
-        # undefined (you can't divide by zero), so we say so plainly
-        # instead of printing something like "+inf%".
-        print(
-            f"{TOPIC.capitalize()}: {today_count} mention(s) today vs "
-            f"0 yesterday (can't calculate a percentage change from zero)."
-        )
-        return
+        # A percentage change from zero is undefined (can't divide by
+        # zero), so we flag it instead of printing something like "+inf%".
+        return {"topic": topic, "status": "zero_yesterday", "today_count": today_count}
 
     growth_pct = ((today_count - yesterday_count) / yesterday_count) * 100
-    sign = "+" if growth_pct >= 0 else ""
+    return {
+        "topic": topic,
+        "status": "ok",
+        "today_count": today_count,
+        "yesterday_count": yesterday_count,
+        "growth_pct": growth_pct,
+    }
 
-    print(
-        f"{TOPIC.capitalize()}: {today_count} mention(s) today vs "
-        f"{yesterday_count} yesterday ({sign}{growth_pct:.0f}%)"
+
+def format_result(result):
+    """Turn a compute_growth() result into a human-readable line."""
+    topic = result["topic"].capitalize()
+    status = result["status"]
+
+    if status == "no_data":
+        return f"{topic}: no posts found in the database yet."
+    if status == "insufficient_history":
+        return (
+            f"{topic}: not enough data yet to compare day over day "
+            f"(earliest saved post is from {result['earliest_day']})."
+        )
+    if status == "zero_yesterday":
+        return (
+            f"{topic}: {result['today_count']} mention(s) today vs 0 "
+            "yesterday (can't calculate a percentage change from zero)."
+        )
+
+    sign = "+" if result["growth_pct"] >= 0 else ""
+    return (
+        f"{topic}: {result['today_count']} mention(s) today vs "
+        f"{result['yesterday_count']} yesterday "
+        f"({sign}{result['growth_pct']:.0f}%)"
     )
+
+
+def main(topics=None):
+    if topics is None:
+        topics = load_topics()
+
+    results = []
+    for topic in topics:
+        result = compute_growth(topic)
+        results.append(result)
+        print(format_result(result))
+
+    return results
 
 
 if __name__ == "__main__":

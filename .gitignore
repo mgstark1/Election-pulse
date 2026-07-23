@@ -1,10 +1,10 @@
-# Secrets -- never commit your real Bluesky credentials
+# Secrets -- never commit your real Bluesky or Anthropic credentials
 .env
 
-# The local database, generated chart image, and pipeline log (this is
-# your data, not code, so it doesn't need to be committed)
-data/*.db
-data/*.png
+# agent.py commits data/*.db, data/*.png, and data/agent_summary_log.txt
+# itself (see commit_and_push_data() in agent.py) so historical data
+# persists across runs even on ephemeral compute. Only the local-only
+# run_pipeline.sh log is excluded here.
 data/pipeline.log
 
 # Python virtual environment
