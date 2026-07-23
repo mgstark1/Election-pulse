@@ -14,6 +14,9 @@ posts, save them, and see them on a chart.
   "immigration" into the database
 - `chart.py` -- reads the database and draws a simple chart of how many
   posts were made per hour, so you can see the data is real
+- `growth.py` -- compares today's mention count to yesterday's and prints
+  the percentage change, e.g. "Immigration: 45 mentions today vs 20
+  yesterday (+125%)"
 - `data/` -- where the database file (`election_pulse.db`) and the chart
   image get saved. This folder is excluded from git (see `.gitignore`)
   because it's data, not code.
@@ -87,6 +90,23 @@ This reads everything in the database and saves a bar chart to
 hour. Open that image file to take a look. If it looks empty or sparse,
 run `fetch_posts.py` a few more times (ideally spread across a few
 hours) and try again.
+
+### Check day-over-day growth
+
+```bash
+python growth.py
+```
+
+This compares how many "immigration" posts were saved *today* vs
+*yesterday* and prints the percentage change, e.g.:
+
+```
+Immigration: 45 mention(s) today vs 20 yesterday (+125%)
+```
+
+You'll need to have run `fetch_posts.py` on at least two different
+calendar days for this to have anything to compare -- otherwise it'll
+tell you there isn't enough data yet.
 
 ## Long-term vision (not built yet)
 
