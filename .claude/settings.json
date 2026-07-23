@@ -1,0 +1,11 @@
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "bsky.social",
+        "*.bsky.social",
+        "public.api.bsky.app"
+      ]
+    }
+  }
+}
