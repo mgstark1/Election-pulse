@@ -83,7 +83,16 @@ ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 Without it, `agent.py` still runs the full fetch/chart/growth pipeline --
-it just skips the summary step and says so.
+it just skips the summary step and says so. This is entirely optional and
+can be added at any time; nothing else depends on it.
+
+When it is set, the summary step also searches the web (up to 3 searches
+per run) for recent news that might explain any notable swing in a
+topic's mentions, and mentions it in the summary, e.g. "Immigration
+mentions up 40%, likely tied to yesterday's court ruling on asylum
+claims." Web search costs $10 per 1,000 searches on top of normal token
+costs -- at once a day this comes to well under $2/month. See
+<https://claude.com/pricing> for current rates.
 
 ## Running it
 

@@ -61,9 +61,10 @@ def format_growth_for_prompt(growth_results):
 
 def generate_summary(growth_results):
     """Ask the Anthropic API for a short natural-language summary of the
-    day's growth numbers across all topics. Returns None (and prints why)
-    if ANTHROPIC_API_KEY isn't configured, so the rest of the pipeline
-    still works without it.
+    day's growth numbers across all topics, using web search to check for
+    news that might explain any notable swings. Returns None (and prints
+    why) if ANTHROPIC_API_KEY isn't configured, so the rest of the
+    pipeline still works without it.
     """
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -76,7 +77,8 @@ def generate_summary(growth_results):
     client = Anthropic(api_key=api_key)
     message = client.messages.create(
         model="claude-sonnet-5",
-        max_tokens=200,
+        max_tokens=500,
+        tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 3}],
         messages=[
             {
                 "role": "user",
@@ -84,15 +86,27 @@ def generate_summary(growth_results):
                     "Here is today's day-over-day mention growth for "
                     "several topics tracked on Bluesky:\n\n"
                     f"{stats_text}\n\n"
-                    "Write a short (1-2 sentence) natural-language summary "
-                    "of what changed across topics, in the style of a "
-                    "news brief. Example: 'Immigration mentions up 40%, "
-                    "healthcare flat, economy down 12%.'"
+                    "For any topic with a notable change (a double-digit "
+                    "percent move, or a swing from/to zero), search the "
+                    "web briefly for recent news that might explain it. "
+                    "Then write a short (2-4 sentence) natural-language "
+                    "summary of what changed across topics, in the style "
+                    "of a news brief -- mention a plausible news tie-in "
+                    "where you found one. Example: 'Immigration mentions "
+                    "up 40%, likely tied to yesterday's court ruling on "
+                    "asylum claims; healthcare flat; economy down 12%.' "
+                    "If nothing explains a move, just report the numbers "
+                    "plainly."
                 ),
             }
         ],
     )
-    return message.content[0].text.strip()
+
+    # message.content can include server_tool_use / web_search_tool_result
+    # blocks alongside the final text -- keep only the text.
+    text_blocks = [block.text for block in message.content if block.type == "text"]
+    summary = "\n".join(text_blocks).strip()
+    return summary or None
 
 
 def commit_and_push_data():
