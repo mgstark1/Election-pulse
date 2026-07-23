@@ -77,6 +77,37 @@ PAGE_TEMPLATE = """<!doctype html>
     margin: 0 0 2rem;
   }}
 
+  .roadmap {{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.75rem;
+    color: var(--ink-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }}
+
+  .roadmap .badge {{
+    display: inline-block;
+    background: var(--ink);
+    color: var(--surface);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    margin-bottom: 0.65rem;
+  }}
+
+  .roadmap p {{ margin: 0; }}
+
+  .roadmap strong {{
+    color: var(--ink);
+    font-weight: 600;
+  }}
+
   .summary {{
     background: var(--surface);
     border: 1px solid var(--border);
@@ -171,6 +202,16 @@ PAGE_TEMPLATE = """<!doctype html>
   <h1>Election Pulse</h1>
   <p class="updated">Last updated: {updated_at}</p>
 </header>
+<div class="roadmap">
+  <span class="badge">Phase 1</span>
+  <p>This dashboard currently tracks raw mention volume for each topic on
+  Bluesky -- an early, working version of a bigger plan. Coming next:
+  <strong>richer AI-driven analysis</strong> explaining <em>why</em> a
+  topic is trending (not just a one-line summary),
+  <strong>more topic categories</strong>, and
+  <strong>growth-rate rankings</strong> to surface emerging stories
+  faster than raw volume alone.</p>
+</div>
 {summary_html}
 <div class="grid">
 {sections}
