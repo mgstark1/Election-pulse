@@ -21,24 +21,9 @@ from datetime import datetime, timezone
 import growth
 from chart import slugify
 from config import load_topics
+from palette import topic_accent
 
 OUTPUT_PATH = "index.html"
-
-# Fixed-order categorical palette (light / dark), one accent color per
-# topic card. Order matters for colorblind-safe separation between
-# adjacent slots -- never reassign or cycle past 8 topics; beyond that,
-# TOPIC_COLOR_FALLBACK is used instead of generating a 9th hue.
-TOPIC_COLORS = [
-    ("#2a78d6", "#3987e5"),  # blue
-    ("#eb6834", "#d95926"),  # orange
-    ("#1baf7a", "#199e70"),  # aqua
-    ("#eda100", "#c98500"),  # yellow
-    ("#e87ba4", "#d55181"),  # magenta
-    ("#008300", "#008300"),  # green
-    ("#4a3aa7", "#9085e9"),  # violet
-    ("#e34948", "#e66767"),  # red
-]
-TOPIC_COLOR_FALLBACK = ("#898781", "#898781")  # muted ink -- no more distinct hues left
 
 PAGE_TEMPLATE = """<!doctype html>
 <html lang="en">
@@ -123,9 +108,12 @@ PAGE_TEMPLATE = """<!doctype html>
   .card {{
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 3px solid var(--accent);
+    border-top: 3px solid var(--accent-light);
     border-radius: 12px;
     padding: 1.5rem;
+  }}
+  @media (prefers-color-scheme: dark) {{
+    .card {{ border-top-color: var(--accent-dark); }}
   }}
 
   .card h2 {{
@@ -221,19 +209,31 @@ def render_stat(growth_result):
     return '<p class="note">No posts collected yet.</p>'
 
 
-def render_topic_section(topic, growth_result, accent):
+def render_topic_section(topic, growth_result, light_accent, dark_accent):
     slug = slugify(topic)
     chart_path = f"data/mentions_over_time_{slug}.png"
+    dark_chart_path = f"data/mentions_over_time_{slug}_dark.png"
 
     if os.path.exists(chart_path):
-        chart_html = (
-            f'<img src="{chart_path}" alt="{html.escape(topic)} mentions over time" loading="lazy">'
-        )
+        alt = f"{html.escape(topic)} mentions over time"
+        if os.path.exists(dark_chart_path):
+            # chart.py renders a matching dark-mode image; show it when
+            # the visitor's system is in dark mode instead of a
+            # light-surface chart forced into a dark page.
+            chart_html = (
+                "<picture>"
+                f'<source srcset="{dark_chart_path}" media="(prefers-color-scheme: dark)">'
+                f'<img src="{chart_path}" alt="{alt}" loading="lazy">'
+                "</picture>"
+            )
+        else:
+            chart_html = f'<img src="{chart_path}" alt="{alt}" loading="lazy">'
     else:
         chart_html = '<p class="no-chart">No chart yet -- run fetch_posts.py for this topic first.</p>'
 
+    style = f"--accent-light: {light_accent}; --accent-dark: {dark_accent};"
     return f"""
-    <div class="card" style="--accent: {accent};">
+    <div class="card" style="{style}">
       <h2>{html.escape(topic.capitalize())}</h2>
       {render_stat(growth_result)}
       {chart_html}
@@ -244,16 +244,12 @@ def render_topic_section(topic, growth_result, accent):
 def render_page(topics, growth_results, summary=None):
     growth_by_topic = {r["topic"]: r for r in growth_results}
 
-    # Card accents use each slot's light-mode hex in both color schemes.
-    # Both the light and dark step of every slot pass the same CVD/
-    # contrast checks, so reusing the light value under dark mode is
-    # still accessible -- just a slightly less-tuned accent -- and it
-    # keeps this simple (no separate dark-mode HTML to generate).
     sections = "\n".join(
         render_topic_section(
             topic,
             growth_by_topic[topic],
-            (TOPIC_COLORS[i] if i < len(TOPIC_COLORS) else TOPIC_COLOR_FALLBACK)[0],
+            topic_accent(i, "light"),
+            topic_accent(i, "dark"),
         )
         for i, topic in enumerate(topics)
     )
@@ -278,13 +274,6 @@ def build_site(topics=None, growth_results=None, summary=None):
     if growth_results is None:
         growth_results = growth.main(topics)
 
-    # Accent colors are set via a CSS custom property per card, using the
-    # light-mode hex; the browser's own dark-mode media query swap for
-    # everything else (surfaces, ink) doesn't touch these accents, which
-    # is fine -- both the light and dark steps for each slot pass the
-    # same CVD/contrast checks, so using the light value in both modes
-    # doesn't break accessibility, it's just a slightly less-tuned dark
-    # accent. Good enough for a small set of card top-borders.
     page = render_page(topics, growth_results, summary=summary)
     with open(OUTPUT_PATH, "w") as f:
         f.write(page)
