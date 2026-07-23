@@ -9,10 +9,12 @@ topics.json, it:
 
 It then asks the Anthropic API to write a short natural-language
 summary comparing what changed across all topics (e.g. "immigration
-mentions up 40%, healthcare flat, economy down 12%"), and commits +
-pushes everything new under data/ back to git, so historical data
-persists across runs even when this script executes somewhere with no
-permanent local storage (e.g. a scheduled cloud job).
+mentions up 40%, healthcare flat, economy down 12%"), regenerates the
+index.html dashboard (see generate_site.py), and commits + pushes
+everything new back to git, so historical data persists across runs
+even when this script executes somewhere with no permanent local
+storage (e.g. a scheduled cloud job). If GitHub Pages is enabled for
+this repo (see README.md), that push also updates the live site.
 
 HOW TO RUN IT:
     python agent.py
@@ -32,6 +34,7 @@ from dotenv import load_dotenv
 
 import chart
 import fetch_posts
+import generate_site
 import growth
 from config import load_topics
 
@@ -116,7 +119,7 @@ def commit_and_push_data():
     doesn't erase a successful pipeline run.
     """
     try:
-        subprocess.run(["git", "add", "data/", "topics.json"], check=True)
+        subprocess.run(["git", "add", "data/", "topics.json", "index.html"], check=True)
 
         # git diff --cached --quiet exits 0 if there's nothing staged.
         diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"])
@@ -167,6 +170,8 @@ def run(topics=None):
         os.makedirs("data", exist_ok=True)
         with open(SUMMARY_LOG_PATH, "a") as f:
             f.write(f"{datetime.now(timezone.utc).isoformat()}  {summary}\n")
+
+    generate_site.build_site(topics, growth_results, summary=summary)
 
     commit_and_push_data()
 

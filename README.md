@@ -23,8 +23,12 @@ them, chart them per topic, and summarize what changed.
   today vs 20 yesterday (+125%)"
 - `agent.py` -- the single entry point: runs fetch -> chart -> growth for
   every topic, asks the Anthropic API for a short natural-language
-  summary of what changed across topics, and commits the updated data
-  back to git so history persists even on ephemeral compute
+  summary of what changed across topics, regenerates `index.html`, and
+  commits the updated data back to git so history persists even on
+  ephemeral compute
+- `generate_site.py` -- builds `index.html`, a simple public dashboard
+  page showing each topic's chart and growth line (see "Publishing as a
+  website" below)
 - `data/` -- where the database file (`election_pulse.db`), chart images,
   and the agent's summary log get saved. `agent.py` commits these to git
   itself (see "Automated commits" below).
@@ -196,6 +200,30 @@ Cron only fires if your machine is on and awake at the scheduled time.
 local file only (see `.gitignore`), not something `agent.py` commits, so
 check it directly on the machine running the cron job rather than on
 GitHub.
+
+### Publishing as a website
+
+`agent.py` already regenerates `index.html` -- a simple public dashboard
+page with each topic's chart and current growth line -- and commits it
+alongside the data on every run. To make that a real, live URL, turn on
+GitHub Pages for this repo (one-time setup):
+
+1. On GitHub, go to the repo's **Settings** tab, then **Pages** in the
+   left sidebar (under "Code and automation").
+2. Under **Build and deployment** -> **Source**, choose **Deploy from a
+   branch**.
+3. Under **Branch**, select `claude/election-pulse-setup-f5lyfh` (or
+   whichever branch `agent.py` is actually pushing to) and folder
+   `/ (root)`, then **Save**.
+4. GitHub gives you a URL, typically
+   `https://<your-username>.github.io/<repo-name>/`. It can take a
+   minute or two to go live the first time.
+
+After that, every time `agent.py` runs and pushes (by cron or by hand),
+GitHub Pages picks up the new `index.html` and chart images
+automatically -- no separate deploy step. If you'd rather the live site
+track `main` instead of the feature branch, merge into `main` first
+(see "Automated commits" above) and point Pages at `main` in step 3.
 
 ## Long-term vision (not built yet)
 
