@@ -1,0 +1,15 @@
+# Secrets -- never commit your real Bluesky credentials
+.env
+
+# The local database and generated chart image (this is your data,
+# not code, so it doesn't need to be committed)
+data/*.db
+data/*.png
+
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
