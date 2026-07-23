@@ -164,6 +164,30 @@ permanent record. If the push fails (e.g. someone else pushed first),
 it pulls with `--rebase` and retries once; if that also fails, it prints
 a warning and moves on rather than losing the run's data.
 
+### Scheduling it with cron (macOS/Linux)
+
+To run `agent.py` automatically every day, add a cron job. The command
+below sets your crontab directly (no text editor involved), running the
+agent daily at 9 AM using your project's virtual environment:
+
+```bash
+echo "0 9 * * * cd /path/to/election-pulse && venv/bin/python agent.py >> data/agent_cron.log 2>&1" | crontab -
+```
+
+Replace `/path/to/election-pulse` with this project's actual full path
+on your machine (run `pwd` from inside the project folder to get it).
+Check it saved correctly with:
+
+```bash
+crontab -l
+```
+
+Cron only fires if your machine is on and awake at the scheduled time.
+`data/agent_cron.log` captures each run's output for debugging -- it's a
+local file only (see `.gitignore`), not something `agent.py` commits, so
+check it directly on the machine running the cron job rather than on
+GitHub.
+
 ## Long-term vision (not built yet)
 
 This is just phase one. The eventual plan for Election Pulse is to:
