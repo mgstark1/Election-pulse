@@ -1,0 +1,41 @@
+name: Test Bluesky access from GitHub Actions
+
+# Manual-only smoke test: confirms GitHub Actions runners can log in to
+# Bluesky and run one search query, before committing to a real
+# scheduled workflow. Doesn't save any data or push anything.
+on:
+  workflow_dispatch:
+
+jobs:
+  test-bluesky:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install atproto python-dotenv
+
+      - name: Test Bluesky login and search
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+        run: |
+          python -c "
+          import os
+          from atproto import Client
+
+          handle = os.environ['BLUESKY_HANDLE']
+          password = os.environ['BLUESKY_APP_PASSWORD']
+
+          print(f'Logging in as {handle}...')
+          client = Client()
+          client.login(handle, password)
+          print('Login succeeded.')
+
+          response = client.app.bsky.feed.search_posts(params={'q': 'immigration', 'limit': 5})
+          print(f'Search succeeded, got {len(response.posts)} post(s).')
+          "
