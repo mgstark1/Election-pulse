@@ -13,6 +13,14 @@ from pathlib import Path
 
 DEFAULT_TOPICS_PATH = Path(__file__).parent / "topics.json"
 
+# Display-only cutoff: chart.py and growth.py only chart/compare posts
+# created at or after this UTC timestamp, so the website shows data "from
+# now on" rather than the earlier, less-complete collection runs. The
+# underlying database keeps every post ever fetched -- nothing is
+# deleted -- so this is easy to change or remove later if we ever want
+# to look further back.
+DISPLAY_SINCE = "2026-07-31T00:00:00Z"
+
 
 def load_topics(path=None):
     """Load the list of topics to track from a JSON config file.

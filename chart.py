@@ -25,7 +25,7 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-from config import load_topics
+from config import DISPLAY_SINCE, load_topics
 from db import get_connection
 from palette import THEME, topic_accent
 
@@ -43,10 +43,13 @@ def slugify(topic):
 
 
 def load_post_timestamps(topic):
-    """Fetch every saved post's "created_at" timestamp for one topic."""
+    """Fetch every saved post's "created_at" timestamp for one topic,
+    charted from DISPLAY_SINCE onward (see config.py) -- the database
+    itself still keeps every post ever fetched."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT created_at FROM posts WHERE topic = ?", (topic,)
+        "SELECT created_at FROM posts WHERE topic = ? AND created_at >= ?",
+        (topic, DISPLAY_SINCE),
     ).fetchall()
     conn.close()
     # rows is a list of 1-item tuples, e.g. [("2026-07-23T10:15:00Z",), ...]

@@ -12,7 +12,8 @@ them, chart them per topic, and summarize what changed.
 
 - `topics.json` -- the list of topics to track (edit this to add/remove
   topics; everything else reads from it)
-- `config.py` -- shared helper that loads `topics.json`
+- `config.py` -- shared helper that loads `topics.json`, and holds
+  `DISPLAY_SINCE` (see "Display cutoff" below)
 - `db.py` -- sets up the SQLite database (a single file, no server needed)
 - `fetch_posts.py` -- logs in to Bluesky and saves recent posts mentioning
   each topic in `topics.json`, tagged by topic
@@ -232,6 +233,16 @@ Check it saved correctly with `crontab -l`, and remove it with
 GitHub Actions and don't want both running. `data/agent_cron.log`
 captures each local run's output for debugging -- it's a local file
 only (see `.gitignore`), not something `agent.py` commits.
+
+### Display cutoff
+
+`chart.py` and `growth.py` only chart and compare posts created at or
+after `DISPLAY_SINCE` in `config.py` (currently `2026-07-31T00:00:00Z`),
+so the website reads as "tracking from now on" rather than showing the
+earlier, less-complete collection runs. Nothing is deleted -- every post
+ever fetched stays in `data/election_pulse.db` -- so this is just a
+display filter. Change or remove `DISPLAY_SINCE` later if you want the
+site to look further back.
 
 ### Publishing as a website
 
