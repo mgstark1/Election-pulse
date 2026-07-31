@@ -1,0 +1,45 @@
+name: Daily Election Pulse run
+
+# Runs agent.py's full pipeline (fetch -> chart -> growth -> summary ->
+# commit/push) once a day on GitHub's own servers, so it runs on
+# schedule even if your laptop is off or asleep. Confirmed working via
+# .github/workflows/test-bluesky-access.yml before this was added.
+#
+# The cron time below is in UTC (GitHub Actions doesn't support local
+# timezones) -- adjust the hour to shift when it runs in your timezone.
+on:
+  schedule:
+    - cron: "0 9 * * *" # 9:00 AM UTC daily
+  workflow_dispatch: # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/election-pulse-setup-f5lyfh
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure git identity for the automated commit
+        run: |
+          git config user.name "Election Pulse Bot"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Run agent.py
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          # Optional -- agent.py skips the AI summary step gracefully if
+          # this secret isn't set.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python agent.py
