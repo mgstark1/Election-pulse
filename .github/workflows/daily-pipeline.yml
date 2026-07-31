@@ -5,20 +5,24 @@ name: Daily Election Pulse run
 # schedule even if your laptop is off or asleep. Confirmed working via
 # .github/workflows/test-bluesky-access.yml before this was added.
 #
-# Runs near the END of the UTC day (23:50), not the start -- growth.py
-# compares "today" vs "yesterday" by calendar date, so a run early in
-# the day only captures a few hours of "today" against a full 24 hours
-# of "yesterday", making every day look artificially down. Running late
+# Runs near the END of the day, not the start -- growth.py compares
+# "today" vs "yesterday" by calendar date, so a run early in the day
+# only captures a few hours of "today" against a full 24 hours of
+# "yesterday", making every day look artificially down. Running late
 # captures nearly the whole day before it rolls over, so the next day's
-# comparison is closer to a fair full-day-vs-full-day read. The 10-minute
-# buffer before midnight allows for GitHub's own scheduling delay, which
-# can run scheduled workflows a few minutes late during high load.
+# comparison is closer to a fair full-day-vs-full-day read.
 #
-# The cron time below is in UTC (GitHub Actions doesn't support local
-# timezones) -- adjust the hour/minute to shift when it runs.
+# GitHub Actions cron is fixed UTC and has NO concept of timezones or
+# daylight saving -- it will NOT auto-adjust for BST/GMT. 22:50 UTC
+# below is chosen to land at 23:50 *British Summer Time* (UTC+1),
+# correct while the UK is on BST (late March - late October). Once the
+# UK clocks go back to GMT (UTC+0) for winter, 22:50 UTC will drift to
+# meaning 22:50 GMT -- an hour earlier than intended -- until this is
+# manually flipped to "50 23 * * *" (23:50 UTC = 23:50 GMT). Flip it
+# back to 22:50 UTC the following spring when BST resumes.
 on:
   schedule:
-    - cron: "50 23 * * *" # 23:50 UTC daily
+    - cron: "50 22 * * *" # 22:50 UTC daily = 23:50 BST (UTC+1)
   workflow_dispatch: # lets you trigger a run manually from the Actions tab
 
 permissions:
