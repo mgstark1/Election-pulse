@@ -183,11 +183,43 @@ permanent record. If the push fails (e.g. someone else pushed first),
 it pulls with `--rebase` and retries once; if that also fails, it prints
 a warning and moves on rather than losing the run's data.
 
-### Scheduling it with cron (macOS/Linux)
+### Scheduling it with GitHub Actions (recommended -- runs even if your machine is off)
 
-To run `agent.py` automatically every day, add a cron job. The command
-below sets your crontab directly (no text editor involved), running the
-agent daily at 9 AM using your project's virtual environment:
+`.github/workflows/daily-pipeline.yml` runs `agent.py`'s full pipeline
+once a day on GitHub's own servers -- no dependency on your laptop being
+on, awake, or even open. This is what the project actually uses.
+
+One-time setup:
+
+1. Add two repository secrets (**Settings -> Secrets and variables ->
+   Actions -> "New repository secret"**): `BLUESKY_HANDLE` and
+   `BLUESKY_APP_PASSWORD`, with the same values as your local `.env`.
+   Optionally add `ANTHROPIC_API_KEY` too, for the AI summary step --
+   without it, that step is just skipped.
+2. That's it. The workflow is already committed and already registered
+   (workflow files only take effect once they exist on the repo's
+   default branch, `main` -- see "Automated commits" if you need to
+   merge a feature branch into `main` again after editing it).
+
+It runs daily at **23:50 UTC** -- late in the day rather than the
+morning, on purpose: `growth.py` compares "today" vs "yesterday" by
+calendar date, so a run early in the day only has a few hours of
+"today" to compare against a full 24 hours of "yesterday," making every
+day look artificially down. Running late captures nearly the whole day
+first. Convert 23:50 UTC to your local time and adjust the `cron` line
+in the workflow file if you'd like it to run at a different point in
+the day (GitHub Actions only understands UTC).
+
+To trigger a run manually instead of waiting for the schedule, go to
+the repo's **Actions** tab -> **"Daily Election Pulse run"** ->
+**"Run workflow."** Check progress and logs from the same page.
+
+### Scheduling it locally instead (macOS/Linux)
+
+If you'd rather run it from your own machine instead of (or alongside)
+GitHub Actions, cron works the same way -- though unlike the GitHub
+Actions option above, it only fires if your machine is on and awake at
+the scheduled time:
 
 ```bash
 echo "0 9 * * * cd /path/to/election-pulse && venv/bin/python agent.py >> data/agent_cron.log 2>&1" | crontab -
@@ -195,17 +227,11 @@ echo "0 9 * * * cd /path/to/election-pulse && venv/bin/python agent.py >> data/a
 
 Replace `/path/to/election-pulse` with this project's actual full path
 on your machine (run `pwd` from inside the project folder to get it).
-Check it saved correctly with:
-
-```bash
-crontab -l
-```
-
-Cron only fires if your machine is on and awake at the scheduled time.
-`data/agent_cron.log` captures each run's output for debugging -- it's a
-local file only (see `.gitignore`), not something `agent.py` commits, so
-check it directly on the machine running the cron job rather than on
-GitHub.
+Check it saved correctly with `crontab -l`, and remove it with
+`crontab -l | grep -v election-pulse | crontab -` if you switch to
+GitHub Actions and don't want both running. `data/agent_cron.log`
+captures each local run's output for debugging -- it's a local file
+only (see `.gitignore`), not something `agent.py` commits.
 
 ### Publishing as a website
 

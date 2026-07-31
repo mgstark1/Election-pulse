@@ -5,11 +5,20 @@ name: Daily Election Pulse run
 # schedule even if your laptop is off or asleep. Confirmed working via
 # .github/workflows/test-bluesky-access.yml before this was added.
 #
+# Runs near the END of the UTC day (23:50), not the start -- growth.py
+# compares "today" vs "yesterday" by calendar date, so a run early in
+# the day only captures a few hours of "today" against a full 24 hours
+# of "yesterday", making every day look artificially down. Running late
+# captures nearly the whole day before it rolls over, so the next day's
+# comparison is closer to a fair full-day-vs-full-day read. The 10-minute
+# buffer before midnight allows for GitHub's own scheduling delay, which
+# can run scheduled workflows a few minutes late during high load.
+#
 # The cron time below is in UTC (GitHub Actions doesn't support local
-# timezones) -- adjust the hour to shift when it runs in your timezone.
+# timezones) -- adjust the hour/minute to shift when it runs.
 on:
   schedule:
-    - cron: "0 9 * * *" # 9:00 AM UTC daily
+    - cron: "50 23 * * *" # 23:50 UTC daily
   workflow_dispatch: # lets you trigger a run manually from the Actions tab
 
 permissions:

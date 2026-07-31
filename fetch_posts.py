@@ -3,10 +3,11 @@ fetch_posts.py
 
 This script connects to Bluesky and searches for recent posts that
 mention any of the topics listed in topics.json, then saves them into
-our local SQLite database, tagged with which topic matched. Each topic
-can pull up to MAX_POSTS_PER_TOPIC posts per run (paging through
-Bluesky's search results in batches of 100 -- Bluesky's per-request
-limit), so a busy topic isn't capped at just the first 100 matches.
+our local SQLite database, tagged with which topic matched. For each
+topic it pages through Bluesky's search results (in batches of 100 --
+Bluesky's per-request limit) until Bluesky itself runs out of results
+to give us, so a busy topic isn't capped at just the first 100
+matches.
 
 HOW TO RUN IT:
     python fetch_posts.py
@@ -39,12 +40,13 @@ from db import get_connection, init_db
 # Bluesky allows per request.
 POSTS_PER_REQUEST = 100
 
-# How many posts (across multiple paginated requests) to fetch per topic
-# in a single run. Bluesky's search caps each individual request at 100
-# posts, but paging through further results with a cursor lets us pull
-# more than that per run for busy topics. Raise this if a topic still
-# hits the cap regularly; each extra 100 costs one more API request.
-MAX_POSTS_PER_TOPIC = 500
+# A safety backstop, not a practical target: pages through as many
+# results as Bluesky will give us for a topic, up to this many posts,
+# so a single run can't loop forever if Bluesky's search ever fails to
+# signal "no more results" (e.g. a cursor that never goes away). At 100
+# posts/request this is 100 requests worst case per topic -- high
+# enough that busy topics won't realistically hit it.
+MAX_POSTS_PER_TOPIC = 10000
 
 
 def get_client():
