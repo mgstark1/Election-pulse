@@ -14,9 +14,14 @@ them, chart them per topic, and summarize what changed.
   topics; everything else reads from it)
 - `config.py` -- shared helper that loads `topics.json`, and holds
   `DISPLAY_SINCE` (see "Display cutoff" below)
-- `db.py` -- sets up the SQLite database (a single file, no server needed)
+- `db.py` -- sets up the SQLite database (a single file, no server needed).
+  Every post is tagged with a `source` column (currently always
+  `"bluesky"`), so adding a second platform later (e.g. Twitter) is just
+  a new fetch script writing rows with a different `source` value -- no
+  schema change needed. `init_db()` also migrates any older database
+  file that predates this column, without losing existing rows.
 - `fetch_posts.py` -- logs in to Bluesky and saves recent posts mentioning
-  each topic in `topics.json`, tagged by topic
+  each topic in `topics.json`, tagged by topic and by source (`"bluesky"`)
 - `chart.py` -- reads the database and draws one chart per topic of how
   many posts were made per hour, so you can see the data is real. Saves
   a light-mode and a dark-mode version of each chart (styled with

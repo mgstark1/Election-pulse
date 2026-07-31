@@ -29,11 +29,16 @@ def get_connection():
 def init_db():
     """Create the "posts" table if it doesn't already exist.
 
-    Each row is one Bluesky post that mentioned our tracked topic.
+    Each row is one post (from Bluesky today; other sources like Twitter
+    may be added later) that mentioned our tracked topic.
 
     Columns:
-      - uri:            unique ID Bluesky gives every post (used to avoid
-                         saving the same post twice)
+      - uri:            unique ID the source platform gives every post
+                         (used to avoid saving the same post twice)
+      - source:         which platform this post came from, e.g. "bluesky".
+                         Only one source today, but storing it now means
+                         we don't have to change the table when a second
+                         one is added.
       - topic:          which topic we were searching for (e.g. "immigration").
                          Only one topic today, but storing it now means we
                          don't have to change the table later.
@@ -42,8 +47,8 @@ def init_db():
                          Not used for anything yet, but we're saving it now
                          because a future feature will group posts by the
                          kind of account that posted them.
-      - created_at:     when the post was made (from Bluesky), as text in
-                         ISO 8601 format, e.g. "2026-07-23T10:15:00.000Z"
+      - created_at:     when the post was made (from the source platform), as
+                         text in ISO 8601 format, e.g. "2026-07-23T10:15:00.000Z"
       - fetched_at:     when *we* saved this row, so we know how fresh
                          our data is
     """
@@ -52,6 +57,7 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS posts (
             uri            TEXT PRIMARY KEY,
+            source         TEXT NOT NULL DEFAULT 'bluesky',
             topic          TEXT NOT NULL,
             text           TEXT NOT NULL,
             author_handle  TEXT NOT NULL,
@@ -60,6 +66,15 @@ def init_db():
         )
         """
     )
+
+    # Migration for databases created before "source" existed -- adds the
+    # column (defaulting existing rows to "bluesky", the only source that
+    # existed then) instead of losing them. A no-op once the column is
+    # already there, so it's safe to run on every startup.
+    existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(posts)")}
+    if "source" not in existing_columns:
+        conn.execute("ALTER TABLE posts ADD COLUMN source TEXT NOT NULL DEFAULT 'bluesky'")
+
     conn.commit()
     conn.close()
 

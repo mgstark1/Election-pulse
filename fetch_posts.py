@@ -36,6 +36,10 @@ from dotenv import load_dotenv
 from config import load_topics
 from db import get_connection, init_db
 
+# Tags every post this script saves, so the database can tell Bluesky
+# posts apart from any other source added later (e.g. Twitter).
+SOURCE = "bluesky"
+
 # How many posts to ask Bluesky for in one request. 100 is the max
 # Bluesky allows per request.
 POSTS_PER_REQUEST = 100
@@ -106,11 +110,12 @@ def fetch_topic(client, conn, topic):
             db_cursor = conn.execute(
                 """
                 INSERT OR IGNORE INTO posts
-                    (uri, topic, text, author_handle, created_at, fetched_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (uri, source, topic, text, author_handle, created_at, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     post.uri,
+                    SOURCE,
                     topic,
                     post.record.text,
                     post.author.handle,
