@@ -207,14 +207,23 @@ One-time setup:
    default branch, `main` -- see "Automated commits" if you need to
    merge a feature branch into `main` again after editing it).
 
-It runs daily at **23:50 UTC** -- late in the day rather than the
-morning, on purpose: `growth.py` compares "today" vs "yesterday" by
-calendar date, so a run early in the day only has a few hours of
-"today" to compare against a full 24 hours of "yesterday," making every
-day look artificially down. Running late captures nearly the whole day
-first. Convert 23:50 UTC to your local time and adjust the `cron` line
-in the workflow file if you'd like it to run at a different point in
-the day (GitHub Actions only understands UTC).
+It's scheduled for **22:37 UTC** (23:37 British Summer Time) -- late in
+the day rather than the morning, on purpose: `growth.py` compares
+"today" vs "yesterday" by calendar date, so a run early in the day only
+has a few hours of "today" to compare against a full 24 hours of
+"yesterday," making every day look artificially down. Running late
+captures nearly the whole day first. The minute (`:37`) is deliberately
+not a round number -- see the comment in the workflow file for why.
+Convert 22:37 UTC to your local time and adjust the `cron` line in the
+workflow file if you'd like it to run at a different point in the day
+(GitHub Actions only understands UTC).
+
+Note: GitHub Actions scheduled workflows aren't guaranteed to fire
+exactly on time -- GitHub's own docs warn of delays during high load,
+and in practice this project's runs have sometimes landed hours late.
+If a run seems to be consistently firing far from its scheduled time,
+that's a known GitHub-side behavior (especially on public/free-tier
+repos with light Actions usage), not a bug in this repo's config.
 
 To trigger a run manually instead of waiting for the schedule, go to
 the repo's **Actions** tab -> **"Daily Election Pulse run"** ->
