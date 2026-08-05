@@ -192,8 +192,8 @@ a warning and moves on rather than losing the run's data.
 ### Scheduling it with GitHub Actions (recommended -- runs even if your machine is off)
 
 `.github/workflows/daily-pipeline.yml` runs `agent.py`'s full pipeline
-once a day on GitHub's own servers -- no dependency on your laptop being
-on, awake, or even open. This is what the project actually uses.
+once a day -- no dependency on your laptop being on, awake, or even
+open. This is what the project actually uses.
 
 One-time setup:
 
@@ -207,26 +207,33 @@ One-time setup:
    default branch, `main` -- see "Automated commits" if you need to
    merge a feature branch into `main` again after editing it).
 
-It's scheduled for **22:37 UTC** (23:37 British Summer Time) -- late in
-the day rather than the morning, on purpose: `growth.py` compares
-"today" vs "yesterday" by calendar date, so a run early in the day only
-has a few hours of "today" to compare against a full 24 hours of
-"yesterday," making every day look artificially down. Running late
-captures nearly the whole day first. The minute (`:37`) is deliberately
-not a round number -- see the comment in the workflow file for why.
-Convert 22:37 UTC to your local time and adjust the `cron` line in the
-workflow file if you'd like it to run at a different point in the day
-(GitHub Actions only understands UTC).
+**How it's actually triggered:** not by GitHub's own `on: schedule`
+cron. We tried that first, and it proved unreliable for this repo --
+scheduled runs landed anywhere from ~9 to ~12 hours late, night after
+night, even after moving off a "popular" round minute (GitHub's docs
+acknowledge scheduled workflows aren't guaranteed to fire on time, and
+in practice this looks like GitHub deprioritizing scheduled runs on
+low-traffic public/free-tier repos). Instead, the workflow is triggered
+daily at **22:37 UTC** (23:37 British Summer Time) by an external
+scheduler (a Claude Code Remote Routine, outside this repo) calling the
+GitHub API's `workflow_dispatch` endpoint directly -- a direct API call
+isn't subject to GitHub's scheduling queue, so it actually fires on
+time. The tradeoff: the daily trigger now depends on that external
+Routine continuing to exist, rather than being fully self-contained in
+this repo. If daily runs stop appearing in the Actions tab, that
+Routine is the first thing to check.
 
-Note: GitHub Actions scheduled workflows aren't guaranteed to fire
-exactly on time -- GitHub's own docs warn of delays during high load,
-and in practice this project's runs have sometimes landed hours late.
-If a run seems to be consistently firing far from its scheduled time,
-that's a known GitHub-side behavior (especially on public/free-tier
-repos with light Actions usage), not a bug in this repo's config.
+22:37 UTC is late in the day rather than the morning, on purpose:
+`growth.py` compares "today" vs "yesterday" by calendar date, so a run
+early in the day only has a few hours of "today" to compare against a
+full 24 hours of "yesterday," making every day look artificially down.
+Running late captures nearly the whole day first. Convert 22:37 UTC to
+your local time if you'd like it to run at a different point in the
+day -- since the schedule lives in the external Routine now, not this
+file, changing it means updating the Routine, not the workflow YAML.
 
-To trigger a run manually instead of waiting for the schedule, go to
-the repo's **Actions** tab -> **"Daily Election Pulse run"** ->
+To trigger a run manually instead of waiting for the daily trigger, go
+to the repo's **Actions** tab -> **"Daily Election Pulse run"** ->
 **"Run workflow."** Check progress and logs from the same page.
 
 ### Scheduling it locally instead (macOS/Linux)

@@ -1,41 +1,42 @@
 name: Daily Election Pulse run
 
 # Runs agent.py's full pipeline (fetch -> chart -> growth -> summary ->
-# commit/push) once a day on GitHub's own servers, so it runs on
-# schedule even if your laptop is off or asleep. Confirmed working via
+# commit/push) once a day, so it runs on schedule even if your laptop is
+# off or asleep. Confirmed working via
 # .github/workflows/test-bluesky-access.yml before this was added.
 #
-# Runs near the END of the day, not the start -- growth.py compares
-# "today" vs "yesterday" by calendar date, so a run early in the day
-# only captures a few hours of "today" against a full 24 hours of
-# "yesterday", making every day look artificially down. Running late
-# captures nearly the whole day before it rolls over, so the next day's
-# comparison is closer to a fair full-day-vs-full-day read.
+# NOT triggered by GitHub's own `on: schedule` cron -- we tried that
+# (see git history) and it proved unreliable for this repo: scheduled
+# runs landed anywhere from ~9 to ~12 hours late, night after night,
+# even after moving off a "popular" round minute. GitHub's docs
+# acknowledge scheduled workflows can be delayed under load and don't
+# guarantee an exact fire time, and in practice this seems to be
+# GitHub deprioritizing scheduled runs on this repo (public, free
+# tier, light Actions usage) rather than anything fixable from our
+# side.
 #
-# GitHub Actions cron is fixed UTC and has NO concept of timezones or
-# daylight saving -- it will NOT auto-adjust for BST/GMT. 22:37 UTC
-# below is chosen to land at 23:37 *British Summer Time* (UTC+1),
-# correct while the UK is on BST (late March - late October). Once the
-# UK clocks go back to GMT (UTC+0) for winter, 22:37 UTC will drift to
-# meaning 22:37 GMT -- an hour earlier than intended -- until this is
-# manually flipped to "37 23 * * *" (23:37 UTC = 23:37 GMT). Flip it
-# back to 22:37 UTC the following spring when BST resumes.
+# Instead, this workflow is triggered daily via workflow_dispatch by an
+# external scheduler (a Claude Code Remote Routine, outside this repo)
+# calling the GitHub API directly at 22:37 UTC (23:37 British Summer
+# Time) -- a direct API call isn't subject to GitHub's own scheduling
+# queue, so it fires on time. It runs near the END of the day, not the
+# start, on purpose: growth.py compares "today" vs "yesterday" by
+# calendar date, so a run early in the day only captures a few hours of
+# "today" against a full 24 hours of "yesterday," making every day look
+# artificially down. Running late captures nearly the whole day first.
 #
-# The minute is deliberately NOT a round number (not :00/:15/:30/:45/:50).
-# GitHub's own docs warn that scheduled workflows can be delayed during
-# periods of high load, and popular round minutes are where that load
-# concentrates -- every repo whose owner picked a "clean" time collides
-# on the same slot. We hit this in practice: with "50 22 * * *" the
-# workflow fired ~9 hours late two nights running (~07:40 UTC instead of
-# 22:50 UTC) -- consistent enough to be scheduler congestion rather than
-# random jitter. If runs still land far from 22:37 UTC after this
-# change, GitHub's scheduler may simply be deprioritizing this repo's
-# scheduled runs (a known behavior on public/free-tier repos with low
-# Actions usage) rather than anything fixable by picking a better minute.
+# GitHub Actions (and this external scheduler) use fixed UTC with NO
+# concept of timezones or daylight saving. 22:37 UTC is chosen to land
+# at 23:37 BST, correct while the UK is on BST (late March - late
+# October). Once the UK clocks go back to GMT for winter, the external
+# Routine's schedule needs to be manually flipped to 23:37 UTC to keep
+# meaning 23:37 GMT -- update the Routine itself (not this file; there's
+# no cron here anymore). Flip it back to 22:37 UTC the following spring.
+#
+# workflow_dispatch below also lets you trigger a run manually from the
+# Actions tab, same as always.
 on:
-  schedule:
-    - cron: "37 22 * * *" # 22:37 UTC daily = 23:37 BST (UTC+1)
-  workflow_dispatch: # lets you trigger a run manually from the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: write
