@@ -6,6 +6,9 @@ topics.json, it:
     1. Fetches new posts from Bluesky (fetch_posts.py)
     2. Redraws that topic's hourly mentions chart (chart.py)
     3. Computes that topic's day-over-day growth (growth.py)
+    4. Classifies recent posts as positive/negative (sentiment.py) --
+       skipped gracefully if no trained model is present yet, see
+       models/README.md
 
 It then asks the Anthropic API to write a short natural-language
 summary comparing what changed across all topics (e.g. "immigration
@@ -36,6 +39,7 @@ import chart
 import fetch_posts
 import generate_site
 import growth
+import sentiment
 from config import load_topics
 
 SUMMARY_LOG_PATH = "data/agent_summary_log.txt"
@@ -162,6 +166,7 @@ def run(topics=None):
     fetch_posts.fetch_all_topics(topics)
     chart.main(topics)
     growth_results = growth.main(topics)
+    sentiment_results = sentiment.main(topics)
 
     summary = generate_summary(growth_results)
     if summary:
@@ -171,7 +176,9 @@ def run(topics=None):
         with open(SUMMARY_LOG_PATH, "a") as f:
             f.write(f"{datetime.now(timezone.utc).isoformat()}  {summary}\n")
 
-    generate_site.build_site(topics, growth_results, summary=summary)
+    generate_site.build_site(
+        topics, growth_results, summary=summary, sentiment_results=sentiment_results
+    )
 
     commit_and_push_data()
 

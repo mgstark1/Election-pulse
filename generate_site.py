@@ -19,6 +19,7 @@ import os
 from datetime import datetime, timezone
 
 import growth
+import sentiment
 from chart import slugify
 from config import load_topics
 from palette import topic_accent
@@ -176,6 +177,12 @@ PAGE_TEMPLATE = """<!doctype html>
     color: var(--ink-secondary);
   }}
 
+  .sentiment {{
+    color: var(--ink-secondary);
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+  }}
+
   .note {{
     color: var(--ink-muted);
     font-size: 0.9rem;
@@ -250,7 +257,18 @@ def render_stat(growth_result):
     return '<p class="note">No posts collected yet.</p>'
 
 
-def render_topic_section(topic, growth_result, light_accent, dark_accent):
+def render_sentiment(sentiment_result):
+    """Render the sentiment line for a topic, or nothing if there's no
+    result to show yet (model not trained, or no posts)."""
+    if sentiment_result is None or sentiment_result["status"] != "ok":
+        return ""
+    return (
+        f'<p class="sentiment">{sentiment_result["positive"]} positive · '
+        f'{sentiment_result["negative"]} negative</p>'
+    )
+
+
+def render_topic_section(topic, growth_result, sentiment_result, light_accent, dark_accent):
     slug = slugify(topic)
     chart_path = f"data/mentions_over_time_{slug}.png"
     dark_chart_path = f"data/mentions_over_time_{slug}_dark.png"
@@ -277,18 +295,21 @@ def render_topic_section(topic, growth_result, light_accent, dark_accent):
     <div class="card" style="{style}">
       <h2>{html.escape(topic.capitalize())}</h2>
       {render_stat(growth_result)}
+      {render_sentiment(sentiment_result)}
       {chart_html}
     </div>
     """
 
 
-def render_page(topics, growth_results, summary=None):
+def render_page(topics, growth_results, sentiment_results=None, summary=None):
     growth_by_topic = {r["topic"]: r for r in growth_results}
+    sentiment_by_topic = {r["topic"]: r for r in (sentiment_results or [])}
 
     sections = "\n".join(
         render_topic_section(
             topic,
             growth_by_topic[topic],
+            sentiment_by_topic.get(topic),
             topic_accent(i, "light"),
             topic_accent(i, "dark"),
         )
@@ -309,13 +330,15 @@ def render_page(topics, growth_results, summary=None):
     )
 
 
-def build_site(topics=None, growth_results=None, summary=None):
+def build_site(topics=None, growth_results=None, sentiment_results=None, summary=None):
     if topics is None:
         topics = load_topics()
     if growth_results is None:
         growth_results = growth.main(topics)
+    if sentiment_results is None:
+        sentiment_results = sentiment.main(topics)
 
-    page = render_page(topics, growth_results, summary=summary)
+    page = render_page(topics, growth_results, sentiment_results=sentiment_results, summary=summary)
     with open(OUTPUT_PATH, "w") as f:
         f.write(page)
 

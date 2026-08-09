@@ -30,11 +30,16 @@ them, chart them per topic, and summarize what changed.
 - `growth.py` -- compares today's mention count to yesterday's for each
   topic and prints the percentage change, e.g. "Immigration: 45 mentions
   today vs 20 yesterday (+125%)"
-- `agent.py` -- the single entry point: runs fetch -> chart -> growth for
-  every topic, asks the Anthropic API for a short natural-language
-  summary of what changed across topics, regenerates `index.html`, and
-  commits the updated data back to git so history persists even on
-  ephemeral compute
+- `sentiment.py` -- classifies each topic's recent posts as positive or
+  negative, using a model trained separately (see
+  `sentiment_training/`). Skips gracefully, without breaking the rest
+  of the pipeline, if no trained model is present yet (see
+  `models/README.md`)
+- `agent.py` -- the single entry point: runs fetch -> chart -> growth ->
+  sentiment for every topic, asks the Anthropic API for a short
+  natural-language summary of what changed across topics, regenerates
+  `index.html`, and commits the updated data back to git so history
+  persists even on ephemeral compute
 - `generate_site.py` -- builds `index.html`, a public dashboard page with
   a stat tile + chart per topic (see "Publishing as a website" below)
 - `palette.py` -- the colorblind-safe color palette shared by `chart.py`
@@ -44,6 +49,13 @@ them, chart them per topic, and summarize what changed.
 - `data/` -- where the database file (`election_pulse.db`), chart images
   (light + dark per topic), and the agent's summary log get saved.
   `agent.py` commits these to git itself (see "Automated commits" below).
+- `models/` -- the trained sentiment model `sentiment.py` loads at
+  runtime (`sentiment_model.joblib` + `tfidf_vectorizer.joblib`). See
+  `models/README.md` for where these come from.
+- `sentiment_training/` -- a self-contained learning exercise for
+  training the sentiment model from scratch (TF-IDF + logistic
+  regression). Not part of the automated pipeline -- see its own
+  README.
 
 ## One-time setup
 
