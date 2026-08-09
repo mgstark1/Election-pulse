@@ -13,6 +13,8 @@
     --ink-secondary: #52514e;
     --ink-muted: #898781;
     --border: rgba(11,11,11,0.10);
+    --delta-up: #006300;
+    --delta-down: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -23,6 +25,8 @@
       --ink-secondary: #c3c2b7;
       --ink-muted: #898781;
       --border: rgba(255,255,255,0.10);
+      --delta-up: #0ca30c;
+      --delta-down: #e66767;
     }
   }
 
@@ -146,8 +150,12 @@
 
   .stat .delta {
     font-size: 0.95rem;
+    font-weight: 600;
     color: var(--ink-secondary);
   }
+
+  .stat .delta.up { color: var(--delta-up); }
+  .stat .delta.down { color: var(--delta-down); }
 
   .sentiment {
     color: var(--ink-secondary);
@@ -179,7 +187,7 @@
 <div class="page">
 <header>
   <h1>Election Pulse</h1>
-  <p class="updated">Last updated: 2026-08-09 20:01 UTC</p>
+  <p class="updated">Last updated: 2026-08-09 20:27 UTC</p>
 </header>
 <div class="roadmap">
   <span class="badge">Phase 1</span>
@@ -196,8 +204,8 @@
 
     <div class="card" style="--accent-light: #2a78d6; --accent-dark: #3987e5;">
       <h2>Immigration</h2>
-      <div class="stat"><span class="value">109</span><span class="unit">mentions today</span><span class="delta">▲ +10% vs yesterday</span></div>
-      <p class="sentiment">976 positive · 715 negative</p>
+      <div class="stat"><span class="value">198</span><span class="unit">mentions today</span><span class="delta up">▲ +100% vs yesterday</span></div>
+      <p class="sentiment">1024 positive · 756 negative</p>
       <picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
       <picture><source srcset="data/sentiment_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_immigration.png" alt="immigration sentiment over time" loading="lazy"></picture>
     </div>
@@ -205,8 +213,8 @@
 
     <div class="card" style="--accent-light: #eb6834; --accent-dark: #d95926;">
       <h2>Healthcare</h2>
-      <div class="stat"><span class="value">227</span><span class="unit">mentions today</span><span class="delta">▲ +136% vs yesterday</span></div>
-      <p class="sentiment">874 positive · 588 negative</p>
+      <div class="stat"><span class="value">301</span><span class="unit">mentions today</span><span class="delta up">▲ +214% vs yesterday</span></div>
+      <p class="sentiment">922 positive · 614 negative</p>
       <picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
       <picture><source srcset="data/sentiment_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_healthcare.png" alt="healthcare sentiment over time" loading="lazy"></picture>
     </div>
@@ -214,8 +222,8 @@
 
     <div class="card" style="--accent-light: #1baf7a; --accent-dark: #199e70;">
       <h2>Economy</h2>
-      <div class="stat"><span class="value">119</span><span class="unit">mentions today</span><span class="delta">▼ -37% vs yesterday</span></div>
-      <p class="sentiment">1038 positive · 616 negative</p>
+      <div class="stat"><span class="value">181</span><span class="unit">mentions today</span><span class="delta down">▼ -5% vs yesterday</span></div>
+      <p class="sentiment">1075 positive · 641 negative</p>
       <picture><source srcset="data/mentions_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_economy.png" alt="economy mentions over time" loading="lazy"></picture>
       <picture><source srcset="data/sentiment_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_economy.png" alt="economy sentiment over time" loading="lazy"></picture>
     </div>
@@ -223,8 +231,8 @@
 
     <div class="card" style="--accent-light: #eda100; --accent-dark: #c98500;">
       <h2>Tax</h2>
-      <div class="stat"><span class="value">113</span><span class="unit">mentions today</span><span class="delta">▲ +19% vs yesterday</span></div>
-      <p class="sentiment">607 positive · 542 negative</p>
+      <div class="stat"><span class="value">177</span><span class="unit">mentions today</span><span class="delta up">▲ +86% vs yesterday</span></div>
+      <p class="sentiment">637 positive · 576 negative</p>
       <picture><source srcset="data/mentions_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_tax.png" alt="Tax mentions over time" loading="lazy"></picture>
       <picture><source srcset="data/sentiment_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_tax.png" alt="Tax sentiment over time" loading="lazy"></picture>
     </div>
