@@ -16,3 +16,12 @@ venv/
 # Python cache files
 __pycache__/
 *.pyc
+
+# sentiment_training/ is a separate learning exercise (see its own
+# README) -- any data exported for convenience or intermediate trained
+# model files shouldn't be committed. A finished model that's actually
+# going to be used gets copied into the main project deliberately, by
+# hand, not picked up automatically here.
+sentiment_training/*.csv
+sentiment_training/*.joblib
+sentiment_training/*.pkl
