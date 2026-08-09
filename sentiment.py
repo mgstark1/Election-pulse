@@ -57,9 +57,11 @@ def clean_text(text):
     return re.sub(r"\S*\.\S+/\S*", "", text)
 
 
-def _load_model():
+def load_model():
     """Load and cache the trained model + vectorizer. Returns
-    (None, None) if the files aren't there yet."""
+    (None, None) if the files aren't there yet. Public because chart.py
+    also needs it, to color the mentions chart by sentiment when a
+    model is available."""
     global _model, _vectorizer
     if _model is not None:
         return _model, _vectorizer
@@ -261,7 +263,7 @@ def main(topics=None):
     if topics is None:
         topics = load_topics()
 
-    model, vectorizer = _load_model()
+    model, vectorizer = load_model()
     if model is None:
         print(
             "Sentiment model not found (expected models/sentiment_model.joblib "

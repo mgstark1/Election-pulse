@@ -55,6 +55,32 @@ DIVERGING = {
     "negative": TOPIC_COLORS[7],  # red
 }
 
+# Status pair (fixed, not themed -- same hex in light and dark, per the
+# dataviz skill's status palette) for "state" uses: a post's sentiment,
+# or a stacked bar segment. Mark-safe (>=3:1 on both chart surfaces) but
+# NOT text-safe on the light surface -- see DELTA_TEXT below for text.
+STATUS_GOOD = "#0ca30c"
+STATUS_CRITICAL = "#d03b3b"
+
+# Text-safe green/red for the growth "delta" line (e.g. "+136%"),
+# distinct from STATUS_GOOD/STATUS_CRITICAL because those two fail
+# WCAG's 4.5:1 text-contrast threshold on at least one surface (status
+# good is only 3.27:1 on light; status critical is only 3.62:1 on
+# dark) -- fine for a mark, not for small text. "up" reuses this
+# project's only documented text-safe delta token (the dataviz skill's
+# "success text": #006300 light / #0ca30c dark). "down" has no
+# equivalent documented token, so it's derived the same way: for each
+# mode, the already-documented red step (status-critical for light,
+# TOPIC_COLORS' red dark step for dark) that actually clears 4.5:1 on
+# that mode's surface -- computed with the dataviz skill's
+# scripts/validate_palette.js contrast() helper, not eyeballed:
+#   #d03b3b vs light surface #fcfcfb -> 4.68:1 (passes)
+#   #e66767 vs dark surface  #1a1a19 -> 5.39:1 (passes)
+DELTA_TEXT = {
+    "up": ("#006300", STATUS_GOOD),
+    "down": (STATUS_CRITICAL, TOPIC_COLORS[7][1]),
+}
+
 
 def topic_accent(index, mode="light"):
     """Return the accent hex for the topic at this position in the
@@ -66,4 +92,10 @@ def topic_accent(index, mode="light"):
 def diverging_color(key, mode="light"):
     """Return the diverging-pair hex for "positive" or "negative"."""
     slot = DIVERGING[key]
+    return slot[0] if mode == "light" else slot[1]
+
+
+def delta_text_color(direction, mode="light"):
+    """Return the text-safe delta color for "up" or "down"."""
+    slot = DELTA_TEXT[direction]
     return slot[0] if mode == "light" else slot[1]

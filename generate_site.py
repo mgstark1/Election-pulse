@@ -22,7 +22,7 @@ import growth
 import sentiment
 from chart import slugify
 from config import load_topics
-from palette import topic_accent
+from palette import delta_text_color, topic_accent
 
 OUTPUT_PATH = "index.html"
 
@@ -41,6 +41,8 @@ PAGE_TEMPLATE = """<!doctype html>
     --ink-secondary: #52514e;
     --ink-muted: #898781;
     --border: rgba(11,11,11,0.10);
+    --delta-up: {delta_up_light};
+    --delta-down: {delta_down_light};
   }}
   @media (prefers-color-scheme: dark) {{
     :root {{
@@ -51,6 +53,8 @@ PAGE_TEMPLATE = """<!doctype html>
       --ink-secondary: #c3c2b7;
       --ink-muted: #898781;
       --border: rgba(255,255,255,0.10);
+      --delta-up: {delta_up_dark};
+      --delta-down: {delta_down_dark};
     }}
   }}
 
@@ -174,8 +178,12 @@ PAGE_TEMPLATE = """<!doctype html>
 
   .stat .delta {{
     font-size: 0.95rem;
+    font-weight: 600;
     color: var(--ink-secondary);
   }}
+
+  .stat .delta.up {{ color: var(--delta-up); }}
+  .stat .delta.down {{ color: var(--delta-down); }}
 
   .sentiment {{
     color: var(--ink-secondary);
@@ -235,13 +243,15 @@ def render_stat(growth_result):
     status = growth_result["status"]
 
     if status == "ok":
-        arrow = "▲" if growth_result["growth_pct"] >= 0 else "▼"
-        sign = "+" if growth_result["growth_pct"] >= 0 else ""
+        is_up = growth_result["growth_pct"] >= 0
+        arrow = "▲" if is_up else "▼"
+        sign = "+" if is_up else ""
+        direction_class = "up" if is_up else "down"
         return (
             '<div class="stat">'
             f'<span class="value">{growth_result["today_count"]}</span>'
             '<span class="unit">mentions today</span>'
-            f'<span class="delta">{arrow} {sign}{growth_result["growth_pct"]:.0f}% vs yesterday</span>'
+            f'<span class="delta {direction_class}">{arrow} {sign}{growth_result["growth_pct"]:.0f}% vs yesterday</span>'
             "</div>"
         )
     if status == "zero_yesterday":
@@ -349,6 +359,10 @@ def render_page(topics, growth_results, sentiment_results=None, summary=None):
         updated_at=updated_at,
         summary_html=summary_html,
         sections=sections,
+        delta_up_light=delta_text_color("up", "light"),
+        delta_up_dark=delta_text_color("up", "dark"),
+        delta_down_light=delta_text_color("down", "light"),
+        delta_down_dark=delta_text_color("down", "dark"),
     )
 
 

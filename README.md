@@ -23,13 +23,16 @@ them, chart them per topic, and summarize what changed.
 - `fetch_posts.py` -- logs in to Bluesky and saves recent posts mentioning
   each topic in `topics.json`, tagged by topic and by source (`"bluesky"`)
 - `chart.py` -- reads the database and draws one chart per topic of how
-  many posts were made per hour, so you can see the data is real. Saves
-  a light-mode and a dark-mode version of each chart (styled with
-  `palette.py`), so the dashboard shows the right one for the visitor's
-  system color scheme
+  many posts were made per hour, so you can see the data is real. Bars
+  are stacked and colored green/red by sentiment (positive/negative)
+  once a trained sentiment model is available; otherwise falls back to
+  a single accent-colored bar per hour. Saves a light-mode and a
+  dark-mode version of each chart (styled with `palette.py`), so the
+  dashboard shows the right one for the visitor's system color scheme
 - `growth.py` -- compares today's mention count to yesterday's for each
   topic and prints the percentage change, e.g. "Immigration: 45 mentions
-  today vs 20 yesterday (+125%)"
+  today vs 20 yesterday (+125%)" -- shown color-coded (green up, red
+  down) on the site
 - `sentiment.py` -- classifies each topic's recent posts as positive or
   negative, using a model trained separately (see
   `sentiment_training/`). Also draws a sentiment-over-time line chart
