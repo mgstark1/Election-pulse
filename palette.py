@@ -34,6 +34,7 @@ THEME = {
         "ink_secondary": "#52514e",
         "ink_muted": "#898781",
         "grid": "#e1e0d9",
+        "baseline": "#c3c2b7",
     },
     "dark": {
         "surface": "#1a1a19",
@@ -41,7 +42,17 @@ THEME = {
         "ink_secondary": "#c3c2b7",
         "ink_muted": "#898781",
         "grid": "#2c2c2a",
+        "baseline": "#383835",
     },
+}
+
+# Diverging pair for "which side of a baseline" charts (e.g. sentiment %
+# positive vs a 50% midpoint) -- reuses the exact blue/red hex already
+# validated as TOPIC_COLORS slots 1 and 8, per the dataviz skill's
+# documented diverging pair (blue <-> red, warm/cool poles).
+DIVERGING = {
+    "positive": TOPIC_COLORS[0],  # blue
+    "negative": TOPIC_COLORS[7],  # red
 }
 
 
@@ -49,4 +60,10 @@ def topic_accent(index, mode="light"):
     """Return the accent hex for the topic at this position in the
     topic list. mode is "light" or "dark"."""
     slot = TOPIC_COLORS[index] if index < len(TOPIC_COLORS) else TOPIC_COLOR_FALLBACK
+    return slot[0] if mode == "light" else slot[1]
+
+
+def diverging_color(key, mode="light"):
+    """Return the diverging-pair hex for "positive" or "negative"."""
+    slot = DIVERGING[key]
     return slot[0] if mode == "light" else slot[1]

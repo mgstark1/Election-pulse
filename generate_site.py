@@ -268,27 +268,48 @@ def render_sentiment(sentiment_result):
     )
 
 
+def render_chart_picture(light_path, dark_path, alt, missing_message=None):
+    """Render a light/dark <picture> pair for a chart image. If the
+    light-mode image doesn't exist yet, returns missing_message as a
+    fallback note, or "" if no message was given (e.g. a chart that's
+    expected to be legitimately absent for a while, where repeating a
+    caveat every day would just be noise)."""
+    if not os.path.exists(light_path):
+        return f'<p class="no-chart">{missing_message}</p>' if missing_message else ""
+
+    if os.path.exists(dark_path):
+        # The dark-mode image is rendered to match; show it when the
+        # visitor's system is in dark mode instead of a light-surface
+        # chart forced into a dark page.
+        return (
+            "<picture>"
+            f'<source srcset="{dark_path}" media="(prefers-color-scheme: dark)">'
+            f'<img src="{light_path}" alt="{alt}" loading="lazy">'
+            "</picture>"
+        )
+    return f'<img src="{light_path}" alt="{alt}" loading="lazy">'
+
+
 def render_topic_section(topic, growth_result, sentiment_result, light_accent, dark_accent):
     slug = slugify(topic)
-    chart_path = f"data/mentions_over_time_{slug}.png"
-    dark_chart_path = f"data/mentions_over_time_{slug}_dark.png"
+    topic_escaped = html.escape(topic)
 
-    if os.path.exists(chart_path):
-        alt = f"{html.escape(topic)} mentions over time"
-        if os.path.exists(dark_chart_path):
-            # chart.py renders a matching dark-mode image; show it when
-            # the visitor's system is in dark mode instead of a
-            # light-surface chart forced into a dark page.
-            chart_html = (
-                "<picture>"
-                f'<source srcset="{dark_chart_path}" media="(prefers-color-scheme: dark)">'
-                f'<img src="{chart_path}" alt="{alt}" loading="lazy">'
-                "</picture>"
-            )
-        else:
-            chart_html = f'<img src="{chart_path}" alt="{alt}" loading="lazy">'
-    else:
-        chart_html = '<p class="no-chart">No chart yet -- run fetch_posts.py for this topic first.</p>'
+    mentions_chart_html = render_chart_picture(
+        f"data/mentions_over_time_{slug}.png",
+        f"data/mentions_over_time_{slug}_dark.png",
+        f"{topic_escaped} mentions over time",
+        "No chart yet -- run fetch_posts.py for this topic first.",
+    )
+
+    # No fallback message for the sentiment trend chart -- unlike the
+    # mentions chart, it's expected to be absent for a while (needs 2+
+    # days of data, or no trained model yet), and a blank card region is
+    # less noisy than repeating a caveat every single day until then.
+    sentiment_chart_html = render_chart_picture(
+        f"data/sentiment_over_time_{slug}.png",
+        f"data/sentiment_over_time_{slug}_dark.png",
+        f"{topic_escaped} sentiment over time",
+    )
 
     style = f"--accent-light: {light_accent}; --accent-dark: {dark_accent};"
     return f"""
@@ -296,7 +317,8 @@ def render_topic_section(topic, growth_result, sentiment_result, light_accent, d
       <h2>{html.escape(topic.capitalize())}</h2>
       {render_stat(growth_result)}
       {render_sentiment(sentiment_result)}
-      {chart_html}
+      {mentions_chart_html}
+      {sentiment_chart_html}
     </div>
     """
 

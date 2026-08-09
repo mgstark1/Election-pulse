@@ -32,9 +32,10 @@ them, chart them per topic, and summarize what changed.
   today vs 20 yesterday (+125%)"
 - `sentiment.py` -- classifies each topic's recent posts as positive or
   negative, using a model trained separately (see
-  `sentiment_training/`). Skips gracefully, without breaking the rest
-  of the pipeline, if no trained model is present yet (see
-  `models/README.md`)
+  `sentiment_training/`). Also draws a sentiment-over-time line chart
+  per topic (% positive per day, light + dark) once 2+ days of data
+  exist. Skips gracefully, without breaking the rest of the pipeline,
+  if no trained model is present yet (see `models/README.md`)
 - `agent.py` -- the single entry point: runs fetch -> chart -> growth ->
   sentiment for every topic, asks the Anthropic API for a short
   natural-language summary of what changed across topics, regenerates

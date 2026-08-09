@@ -7,11 +7,16 @@ sentiment_training/ -- a self-contained learning exercise, not part of
 this pipeline). This script only *uses* the already-trained model; it
 never trains anything itself.
 
+Besides the current positive/negative counts, it also draws a
+sentiment-over-time line chart per topic (% positive per day), so
+sentiment swings show up alongside the existing hourly mentions chart.
+
 HOW TO RUN IT:
     python sentiment.py
 
-Like growth.py, only considers posts from DISPLAY_SINCE onward (see
-config.py), so it stays consistent with the rest of the dashboard.
+Like growth.py and chart.py, only considers posts from DISPLAY_SINCE
+onward (see config.py), so it stays consistent with the rest of the
+dashboard.
 
 SETUP REQUIRED:
     models/sentiment_model.joblib and models/tfidf_vectorizer.joblib
@@ -23,14 +28,19 @@ SETUP REQUIRED:
 
 import os
 import re
+from datetime import datetime
 
 import joblib
+import matplotlib.pyplot as plt
 
+from chart import slugify
 from config import DISPLAY_SINCE, load_topics
 from db import get_connection
+from palette import THEME, diverging_color
 
 MODEL_PATH = "models/sentiment_model.joblib"
 VECTORIZER_PATH = "models/tfidf_vectorizer.joblib"
+CHART_DIR = "data"
 
 # Cached after the first load so repeated calls in the same run don't
 # re-read the model files from disk every time.
@@ -62,35 +72,40 @@ def _load_model():
     return _model, _vectorizer
 
 
-def load_post_texts(topic):
-    """Fetch every saved post's text for one topic, from DISPLAY_SINCE
-    onward (see config.py) -- same cutoff growth.py and chart.py use."""
+def classify_posts(topic, model, vectorizer):
+    """Load and classify every recent post for one topic (from
+    DISPLAY_SINCE onward, same cutoff growth.py and chart.py use), in a
+    single pass. Returns a list of (created_at, prediction) pairs --
+    prediction is 1 for positive, 0 for negative -- or None if there's
+    no data yet."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT text FROM posts WHERE topic = ? AND created_at >= ?",
+        "SELECT text, created_at FROM posts WHERE topic = ? AND created_at >= ?",
         (topic, DISPLAY_SINCE),
     ).fetchall()
     conn.close()
-    return [row[0] for row in rows]
 
+    if not rows:
+        return None
 
-def compute_sentiment(topic, model, vectorizer):
-    """Classify every recent post for one topic as positive or
-    negative. Returns a dict describing the result. "status" is one of:
-        "no_model" -- the trained model files aren't available
-        "no_data"  -- no posts to analyze yet
-        "ok"       -- positive/negative counts are populated
-    """
-    texts = load_post_texts(topic)
-    if not texts:
-        return {"topic": topic, "status": "no_data"}
-
-    cleaned = [clean_text(text) for text in texts]
+    cleaned = [clean_text(text) for text, _ in rows]
     vectors = vectorizer.transform(cleaned)
     predictions = model.predict(vectors)
 
-    positive = int(predictions.sum())
-    total = len(predictions)
+    return [(created_at, int(pred)) for (_, created_at), pred in zip(rows, predictions)]
+
+
+def compute_sentiment(topic, classified):
+    """Summarize a topic's classified posts into positive/negative
+    totals. "status" is one of:
+        "no_data" -- no posts to analyze yet
+        "ok"      -- positive/negative counts are populated
+    """
+    if not classified:
+        return {"topic": topic, "status": "no_data"}
+
+    positive = sum(prediction for _, prediction in classified)
+    total = len(classified)
     negative = total - positive
 
     return {
@@ -100,6 +115,133 @@ def compute_sentiment(topic, model, vectorizer):
         "negative": negative,
         "total": total,
     }
+
+
+def compute_daily_sentiment(classified):
+    """Bucket classified posts by calendar day (UTC) and return an
+    ordered {date: percent_positive} dict, for a sentiment-over-time
+    chart. Returns an empty dict if there's no data."""
+    if not classified:
+        return {}
+
+    daily_counts = {}
+    for created_at, prediction in classified:
+        # Bluesky timestamps look like "2026-07-23T10:15:00.123Z";
+        # fromisoformat() doesn't understand the trailing "Z", so we
+        # swap it for "+00:00" (which means the same thing: UTC).
+        dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        day = dt.date()
+        bucket = daily_counts.setdefault(day, {"positive": 0, "total": 0})
+        bucket["total"] += 1
+        bucket["positive"] += prediction
+
+    return {
+        day: 100 * counts["positive"] / counts["total"]
+        for day, counts in sorted(daily_counts.items())
+    }
+
+
+def render_sentiment_chart(topic, daily_pct, mode):
+    """Draw one sentiment-over-time chart (light or dark) and return
+    the Figure. Caller saves and closes it.
+
+    A single line (% positive) against a 50% baseline -- % negative is
+    just 100 minus this, since the model is a binary classifier, so one
+    line fully shows the proportion. Diverging blue/red (the same hues
+    already validated for this project's categorical palette, slots 1
+    and 8) marks which side of 50% each day falls on: the fill between
+    the line and the baseline, and the most-recent-day end-dot, carry
+    the color; the line itself stays neutral ink, per the mark spec
+    that data-color belongs on marks, not text."""
+    theme = THEME[mode]
+    labels = [day.strftime("%Y-%m-%d") for day in daily_pct.keys()]
+    values = list(daily_pct.values())
+
+    positive_hex = diverging_color("positive", mode)
+    negative_hex = diverging_color("negative", mode)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    fig.patch.set_facecolor(theme["surface"])
+    ax.set_facecolor(theme["surface"])
+
+    ax.fill_between(
+        labels, values, 50,
+        where=[v >= 50 for v in values],
+        color=positive_hex, alpha=0.10,
+    )
+    ax.fill_between(
+        labels, values, 50,
+        where=[v < 50 for v in values],
+        color=negative_hex, alpha=0.10,
+    )
+
+    # Neutral reference line at the 50/50 midpoint -- not a data hue.
+    ax.axhline(50, color=theme["baseline"], linewidth=1, linestyle="-")
+
+    ax.plot(
+        labels, values,
+        color=theme["ink_secondary"], linewidth=2,
+        solid_joinstyle="round", solid_capstyle="round",
+    )
+
+    # End-dot + direct label on the most recent value only -- never a
+    # number on every point.
+    end_color = positive_hex if values[-1] >= 50 else negative_hex
+    ax.scatter(
+        [labels[-1]], [values[-1]], s=80, color=end_color,
+        edgecolors=theme["surface"], linewidths=2, zorder=3,
+    )
+    ax.annotate(
+        f"{values[-1]:.0f}%",
+        xy=(labels[-1], values[-1]),
+        xytext=(10, 0), textcoords="offset points",
+        va="center", color=theme["ink"], fontsize=10, fontweight="bold",
+    )
+
+    for side in ("top", "right", "left"):
+        ax.spines[side].set_visible(False)
+    ax.spines["bottom"].set_color(theme["ink_muted"])
+    ax.spines["bottom"].set_linewidth(0.8)
+    ax.yaxis.grid(True, color=theme["grid"], linewidth=1, linestyle="-")
+    ax.xaxis.grid(False)
+    ax.set_axisbelow(True)
+    ax.set_ylim(0, 100)
+
+    ax.tick_params(axis="x", colors=theme["ink_secondary"], labelsize=9)
+    ax.tick_params(axis="y", colors=theme["ink_muted"], labelsize=9)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+
+    ax.set_title(
+        f'"{topic}" sentiment over time (% positive)',
+        color=theme["ink"], fontsize=13, fontweight="bold", loc="left", pad=14,
+    )
+    ax.set_ylabel("% positive", color=theme["ink_secondary"], fontsize=10)
+
+    fig.tight_layout()
+    return fig
+
+
+def make_sentiment_chart_for_topic(topic, daily_pct):
+    """Draw and save the sentiment-over-time chart for one topic, as
+    both a light-mode and a dark-mode image. Returns the light-mode
+    image path, or None if there isn't enough data yet -- a trend needs
+    at least 2 distinct days, unlike the single-snapshot counts."""
+    if len(daily_pct) < 2:
+        return None
+
+    slug = slugify(topic)
+    light_path = f"{CHART_DIR}/sentiment_over_time_{slug}.png"
+    dark_path = f"{CHART_DIR}/sentiment_over_time_{slug}_dark.png"
+
+    fig = render_sentiment_chart(topic, daily_pct, "light")
+    fig.savefig(light_path, dpi=150)
+    plt.close(fig)
+
+    fig = render_sentiment_chart(topic, daily_pct, "dark")
+    fig.savefig(dark_path, dpi=150)
+    plt.close(fig)
+
+    return light_path
 
 
 def format_result(result):
@@ -130,9 +272,14 @@ def main(topics=None):
 
     results = []
     for topic in topics:
-        result = compute_sentiment(topic, model, vectorizer)
+        classified = classify_posts(topic, model, vectorizer)
+
+        result = compute_sentiment(topic, classified)
         results.append(result)
         print(format_result(result))
+
+        daily_pct = compute_daily_sentiment(classified)
+        make_sentiment_chart_for_topic(topic, daily_pct)
 
     return results
 
