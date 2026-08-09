@@ -149,6 +149,12 @@
     color: var(--ink-secondary);
   }
 
+  .sentiment {
+    color: var(--ink-secondary);
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+  }
+
   .note {
     color: var(--ink-muted);
     font-size: 0.9rem;
@@ -173,7 +179,7 @@
 <div class="page">
 <header>
   <h1>Election Pulse</h1>
-  <p class="updated">Last updated: 2026-08-08 22:38 UTC</p>
+  <p class="updated">Last updated: 2026-08-09 19:52 UTC</p>
 </header>
 <div class="roadmap">
   <span class="badge">Phase 1</span>
@@ -190,28 +196,32 @@
 
     <div class="card" style="--accent-light: #2a78d6; --accent-dark: #3987e5;">
       <h2>Immigration</h2>
-      <div class="stat"><span class="value">99</span><span class="unit">mentions today</span><span class="delta">▲ +1% vs yesterday</span></div>
+      <div class="stat"><span class="value">98</span><span class="unit">mentions today</span><span class="delta">▼ -1% vs yesterday</span></div>
+      <p class="sentiment">970 positive · 710 negative</p>
       <picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #eb6834; --accent-dark: #d95926;">
       <h2>Healthcare</h2>
-      <div class="stat"><span class="value">96</span><span class="unit">mentions today</span><span class="delta">▼ -1% vs yesterday</span></div>
+      <div class="stat"><span class="value">191</span><span class="unit">mentions today</span><span class="delta">▲ +99% vs yesterday</span></div>
+      <p class="sentiment">851 positive · 575 negative</p>
       <picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #1baf7a; --accent-dark: #199e70;">
       <h2>Economy</h2>
-      <div class="stat"><span class="value">190</span><span class="unit">mentions today</span><span class="delta">▲ +100% vs yesterday</span></div>
+      <div class="stat"><span class="value">87</span><span class="unit">mentions today</span><span class="delta">▼ -54% vs yesterday</span></div>
+      <p class="sentiment">1018 positive · 604 negative</p>
       <picture><source srcset="data/mentions_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_economy.png" alt="economy mentions over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #eda100; --accent-dark: #c98500;">
       <h2>Tax</h2>
-      <div class="stat"><span class="value">95</span><span class="unit">mentions today</span><span class="delta">▲ +2% vs yesterday</span></div>
+      <div class="stat"><span class="value">84</span><span class="unit">mentions today</span><span class="delta">▼ -12% vs yesterday</span></div>
+      <p class="sentiment">593 positive · 527 negative</p>
       <picture><source srcset="data/mentions_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_tax.png" alt="Tax mentions over time" loading="lazy"></picture>
     </div>
     
