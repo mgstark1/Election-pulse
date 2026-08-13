@@ -210,6 +210,45 @@ PAGE_TEMPLATE = """<!doctype html>
     width: 100%;
     border-radius: 6px;
     display: block;
+    cursor: zoom-in;
+  }}
+
+  #lightbox-overlay {{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 2rem;
+    cursor: zoom-out;
+  }}
+
+  #lightbox-overlay.open {{
+    display: flex;
+  }}
+
+  #lightbox-overlay img {{
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }}
+
+  #lightbox-close {{
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
   }}
 
   .no-chart {{
@@ -241,6 +280,38 @@ PAGE_TEMPLATE = """<!doctype html>
 {sections}
 </div>
 </div>
+<div id="lightbox-overlay">
+  <button id="lightbox-close" aria-label="Close">&times;</button>
+  <img id="lightbox-image" src="" alt="">
+</div>
+<script>
+(function () {{
+  var overlay = document.getElementById('lightbox-overlay');
+  var overlayImg = document.getElementById('lightbox-image');
+  var closeBtn = document.getElementById('lightbox-close');
+
+  function openLightbox(img) {{
+    overlayImg.src = img.currentSrc || img.src;
+    overlayImg.alt = img.alt;
+    overlay.classList.add('open');
+  }}
+
+  function closeLightbox() {{
+    overlay.classList.remove('open');
+    overlayImg.src = '';
+  }}
+
+  document.querySelectorAll('.card img').forEach(function (img) {{
+    img.addEventListener('click', function () {{ openLightbox(img); }});
+  }});
+
+  overlay.addEventListener('click', closeLightbox);
+  closeBtn.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', function (e) {{
+    if (e.key === 'Escape') closeLightbox();
+  }});
+}})();
+</script>
 </body>
 </html>
 """
