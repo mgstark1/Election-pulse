@@ -143,7 +143,7 @@ def compute_daily_sentiment(classified):
     }
 
 
-def render_sentiment_chart(topic, daily_pct, mode):
+def render_sentiment_chart(daily_pct, mode):
     """Draw one sentiment-over-time chart (light or dark) and return
     the Figure. Caller saves and closes it.
 
@@ -213,10 +213,8 @@ def render_sentiment_chart(topic, daily_pct, mode):
     ax.tick_params(axis="y", colors=theme["ink_muted"], labelsize=9)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-    ax.set_title(
-        f'"{topic}" sentiment over time (% positive)',
-        color=theme["ink"], fontsize=13, fontweight="bold", loc="left", pad=14,
-    )
+    # No in-image title -- the dashboard renders an HTML caption above
+    # this chart instead, so type stays consistent card to card.
     ax.set_ylabel("% positive", color=theme["ink_secondary"], fontsize=10)
 
     fig.tight_layout()
@@ -235,11 +233,11 @@ def make_sentiment_chart_for_topic(topic, daily_pct):
     light_path = f"{CHART_DIR}/sentiment_over_time_{slug}.png"
     dark_path = f"{CHART_DIR}/sentiment_over_time_{slug}_dark.png"
 
-    fig = render_sentiment_chart(topic, daily_pct, "light")
+    fig = render_sentiment_chart(daily_pct, "light")
     fig.savefig(light_path, dpi=150)
     plt.close(fig)
 
-    fig = render_sentiment_chart(topic, daily_pct, "dark")
+    fig = render_sentiment_chart(daily_pct, "dark")
     fig.savefig(dark_path, dpi=150)
     plt.close(fig)
 

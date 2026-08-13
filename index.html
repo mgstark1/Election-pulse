@@ -7,24 +7,26 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #f9f9f7;
-    --surface: #fcfcfb;
-    --ink: #0b0b0b;
-    --ink-secondary: #52514e;
-    --ink-muted: #898781;
-    --border: rgba(11,11,11,0.10);
+    --page: #f6f4ee;
+    --surface: #fbfaf6;
+    --ink: #16150f;
+    --ink-secondary: #5b5748;
+    --ink-muted: #8c8676;
+    --border: rgba(22, 21, 15, 0.13);
     --delta-up: #006300;
     --delta-down: #d03b3b;
+    --status-good: #0ca30c;
+    --status-critical: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --page: #0d0d0d;
-      --surface: #1a1a19;
-      --ink: #ffffff;
-      --ink-secondary: #c3c2b7;
-      --ink-muted: #898781;
-      --border: rgba(255,255,255,0.10);
+      --page: #121110;
+      --surface: #1c1b17;
+      --ink: #f5f2ea;
+      --ink-secondary: #c7c2b3;
+      --ink-muted: #8c8676;
+      --border: rgba(255, 255, 255, 0.13);
       --delta-up: #0ca30c;
       --delta-down: #e66767;
     }
@@ -37,150 +39,195 @@
     background: var(--page);
     color: var(--ink);
     margin: 0;
-    padding: 2.5rem 1.25rem 4rem;
+    padding: 2.5rem 1.5rem 4rem;
   }
 
-  .page { max-width: 1000px; margin: 0 auto; }
+  .page { max-width: 1120px; margin: 0 auto; }
 
-  header h1 {
-    font-size: 1.75rem;
-    margin: 0 0 0.25rem;
-    letter-spacing: -0.02em;
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 2.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wordmark {
+    font-family: Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+    font-size: 2.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.3rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
+    color: var(--ink-secondary);
+    margin: 0;
   }
 
   .updated {
     color: var(--ink-muted);
-    font-size: 0.875rem;
-    margin: 0 0 2rem;
-  }
-
-  .roadmap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.1rem 1.25rem;
-    margin-bottom: 1.75rem;
-    color: var(--ink-secondary);
-    font-size: 0.9rem;
-    line-height: 1.6;
-  }
-
-  .roadmap .badge {
-    display: inline-block;
-    background: var(--ink);
-    color: var(--surface);
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    margin-bottom: 0.65rem;
-  }
-
-  .roadmap p { margin: 0; }
-
-  .roadmap strong {
-    color: var(--ink);
-    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.4rem;
+    white-space: nowrap;
   }
 
   .summary {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid #2a78d6;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
+    border-left: 3px solid var(--ink);
+    padding: 0.2rem 0 0.2rem 1.25rem;
     margin-bottom: 2.5rem;
-    color: var(--ink-secondary);
-    font-size: 0.95rem;
-    line-height: 1.5;
   }
 
   .summary .label {
     display: block;
-    color: var(--ink);
-    font-size: 0.75rem;
+    color: var(--ink-muted);
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.35rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+
+  .summary p {
+    font-family: Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 0;
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
   }
 
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 3px solid var(--accent-light);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 3px;
+    padding: 1.5rem 1.5rem 1.75rem;
+  }
+
+  .topic-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 0.9rem;
+  }
+
+  .topic-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-light);
   }
   @media (prefers-color-scheme: dark) {
-    .card { border-top-color: var(--accent-dark); }
+    .topic-dot { background: var(--accent-dark); }
   }
 
   .card h2 {
-    margin: 0 0 0.75rem;
-    font-size: 1.1rem;
-  }
-
-  .stat {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .stat .value {
-    font-size: 2rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
-  .stat .unit {
-    font-size: 0.8rem;
-    color: var(--ink-muted);
-  }
-
-  .stat .delta {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ink-secondary);
-  }
-
-  .stat .delta.up { color: var(--delta-up); }
-  .stat .delta.down { color: var(--delta-down); }
-
-  .sentiment {
-    color: var(--ink-secondary);
-    font-size: 0.85rem;
-    margin: 0 0 1rem;
+    font-family: Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin: 0;
   }
 
   .trending {
-    color: var(--delta-up);
-    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 0 0 0.5rem;
+    letter-spacing: 0.06em;
+    color: var(--delta-up);
+    border: 1px solid var(--delta-up);
+    border-radius: 3px;
+    padding: 0.18rem 0.5rem;
+    margin: 0 0 0.85rem;
+  }
+
+  .stat { margin: 0 0 1.1rem; }
+
+  .stat-primary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-value {
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+
+  .stat-delta {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-secondary);
+  }
+
+  .stat-delta.up { color: var(--delta-up); }
+  .stat-delta.down { color: var(--delta-down); }
+
+  .sentiment-block { margin: 0 0 0.25rem; }
+
+  .sentiment-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--border);
+    margin-bottom: 0.45rem;
+  }
+
+  .sentiment-bar .pos { background: var(--status-good); }
+  .sentiment-bar .neg { background: var(--status-critical); }
+
+  .sentiment-caption {
+    font-size: 0.78rem;
+    color: var(--ink-secondary);
+    margin: 0;
+  }
+
+  .chart-caption {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    margin: 1.35rem 0 0.5rem;
   }
 
   .note {
     color: var(--ink-muted);
     font-size: 0.9rem;
-    margin-bottom: 1rem;
+    font-style: italic;
+    margin: 0 0 1rem;
   }
 
   .card img {
     width: 100%;
-    border-radius: 6px;
+    border-radius: 2px;
     display: block;
     cursor: zoom-in;
   }
@@ -204,7 +251,7 @@
   #lightbox-overlay img {
     max-width: 100%;
     max-height: 100%;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 
@@ -229,67 +276,108 @@
     font-size: 0.9rem;
     margin: 0;
   }
+
+  .site-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+
+  .site-footer .footer-label {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-secondary);
+  }
+
+  @media (max-width: 480px) {
+    .wordmark { font-size: 1.7rem; }
+    body { padding: 1.75rem 1rem 3rem; }
+  }
 </style>
 </head>
 <body>
 <div class="page">
-<header>
-  <h1>Election Pulse</h1>
-  <p class="updated">Last updated: 2026-08-13 13:35 UTC</p>
+<header class="masthead">
+  <div>
+    <h1 class="wordmark">Election Pulse</h1>
+    <p class="tagline">The UK's political conversation, in real time.</p>
+  </div>
+  <p class="updated">Updated 2026-08-13 13:47 UTC</p>
 </header>
-<div class="roadmap">
-  <span class="badge">Phase 1</span>
-  <p>This dashboard currently tracks raw mention volume for each topic on
-  Bluesky -- an early, working version of a bigger plan. Coming next:
-  <strong>richer AI-driven analysis</strong> explaining <em>why</em> a
-  topic is trending (not just a one-line summary),
-  <strong>more topic categories</strong>, and
-  <strong>growth-rate rankings</strong> to surface emerging stories
-  faster than raw volume alone.</p>
-</div>
 
 <div class="grid">
 
     <div class="card" style="--accent-light: #1baf7a; --accent-dark: #199e70;">
-      <h2>Economy</h2>
+      <div class="topic-heading">
+        <span class="topic-dot"></span>
+        <h2>Economy</h2>
+      </div>
       
-      <div class="stat"><span class="value">929</span><span class="unit">mentions today</span><span class="delta down">▼ -74% vs yesterday</span></div>
-      <p class="sentiment">7452 positive · 4186 negative</p>
-      <picture><source srcset="data/mentions_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_economy.png" alt="economy mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_economy.png" alt="economy sentiment over time" loading="lazy"></picture>
+      <div class="stat"><div class="stat-primary"><span class="stat-value">929</span><span class="stat-label">mentions today</span></div><span class="stat-delta down">▼ -74% vs yesterday</span></div>
+      <div class="sentiment-block"><div class="sentiment-bar"><span class="pos" style="width: 64.0%"></span><span class="neg" style="width: 36.0%"></span></div><p class="sentiment-caption">7452 positive &middot; 4186 negative</p></div>
+      <p class="chart-caption">Mentions, by day</p>
+<picture><source srcset="data/mentions_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_economy.png" alt="economy mentions over time" loading="lazy"></picture>
+      <p class="chart-caption">Sentiment, % positive over time</p>
+<picture><source srcset="data/sentiment_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_economy.png" alt="economy sentiment over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #eda100; --accent-dark: #c98500;">
-      <h2>Tax</h2>
+      <div class="topic-heading">
+        <span class="topic-dot"></span>
+        <h2>Tax</h2>
+      </div>
       
-      <div class="stat"><span class="value">1316</span><span class="unit">mentions today</span><span class="delta down">▼ -74% vs yesterday</span></div>
-      <p class="sentiment">5525 positive · 5492 negative</p>
-      <picture><source srcset="data/mentions_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_tax.png" alt="Tax mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_tax.png" alt="Tax sentiment over time" loading="lazy"></picture>
+      <div class="stat"><div class="stat-primary"><span class="stat-value">1316</span><span class="stat-label">mentions today</span></div><span class="stat-delta down">▼ -74% vs yesterday</span></div>
+      <div class="sentiment-block"><div class="sentiment-bar"><span class="pos" style="width: 50.1%"></span><span class="neg" style="width: 49.9%"></span></div><p class="sentiment-caption">5525 positive &middot; 5492 negative</p></div>
+      <p class="chart-caption">Mentions, by day</p>
+<picture><source srcset="data/mentions_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_tax.png" alt="Tax mentions over time" loading="lazy"></picture>
+      <p class="chart-caption">Sentiment, % positive over time</p>
+<picture><source srcset="data/sentiment_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_tax.png" alt="Tax sentiment over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #eb6834; --accent-dark: #d95926;">
-      <h2>Healthcare</h2>
+      <div class="topic-heading">
+        <span class="topic-dot"></span>
+        <h2>Healthcare</h2>
+      </div>
       
-      <div class="stat"><span class="value">793</span><span class="unit">mentions today</span><span class="delta down">▼ -77% vs yesterday</span></div>
-      <p class="sentiment">6906 positive · 4678 negative</p>
-      <picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_healthcare.png" alt="healthcare sentiment over time" loading="lazy"></picture>
+      <div class="stat"><div class="stat-primary"><span class="stat-value">793</span><span class="stat-label">mentions today</span></div><span class="stat-delta down">▼ -77% vs yesterday</span></div>
+      <div class="sentiment-block"><div class="sentiment-bar"><span class="pos" style="width: 59.6%"></span><span class="neg" style="width: 40.4%"></span></div><p class="sentiment-caption">6906 positive &middot; 4678 negative</p></div>
+      <p class="chart-caption">Mentions, by day</p>
+<picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
+      <p class="chart-caption">Sentiment, % positive over time</p>
+<picture><source srcset="data/sentiment_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_healthcare.png" alt="healthcare sentiment over time" loading="lazy"></picture>
     </div>
     
 
     <div class="card" style="--accent-light: #2a78d6; --accent-dark: #3987e5;">
-      <h2>Immigration</h2>
+      <div class="topic-heading">
+        <span class="topic-dot"></span>
+        <h2>Immigration</h2>
+      </div>
       
-      <div class="stat"><span class="value">591</span><span class="unit">mentions today</span><span class="delta down">▼ -82% vs yesterday</span></div>
-      <p class="sentiment">6352 positive · 5170 negative</p>
-      <picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_immigration.png" alt="immigration sentiment over time" loading="lazy"></picture>
+      <div class="stat"><div class="stat-primary"><span class="stat-value">591</span><span class="stat-label">mentions today</span></div><span class="stat-delta down">▼ -82% vs yesterday</span></div>
+      <div class="sentiment-block"><div class="sentiment-bar"><span class="pos" style="width: 55.1%"></span><span class="neg" style="width: 44.9%"></span></div><p class="sentiment-caption">6352 positive &middot; 5170 negative</p></div>
+      <p class="chart-caption">Mentions, by day</p>
+<picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
+      <p class="chart-caption">Sentiment, % positive over time</p>
+<picture><source srcset="data/sentiment_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_immigration.png" alt="immigration sentiment over time" loading="lazy"></picture>
     </div>
     
 </div>
+<footer class="site-footer">
+  <p><span class="footer-label">Phase 1</span> &mdash; This dashboard currently
+  tracks mention volume, growth and sentiment for each topic on Bluesky, an
+  early, working version of a bigger plan. Coming next: richer AI-driven
+  analysis explaining <em>why</em> a topic is trending, and more topic
+  categories.</p>
+</footer>
 </div>
 <div id="lightbox-overlay">
   <button id="lightbox-close" aria-label="Close">&times;</button>

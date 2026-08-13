@@ -107,7 +107,7 @@ def bucket_by_day_and_sentiment(classified):
     return dict(sorted(buckets.items()))
 
 
-def render_chart(topic, daily_counts, accent, mode):
+def render_chart(daily_counts, accent, mode):
     """Draw one chart (light or dark) and return the Figure. Caller
     saves and closes it."""
     theme = THEME[mode]
@@ -137,22 +137,16 @@ def render_chart(topic, daily_counts, accent, mode):
     ax.tick_params(axis="y", colors=theme["ink_muted"], labelsize=9)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-    # A single series needs no legend -- the title already names it.
-    ax.set_title(
-        f'"{topic}" mentions on Bluesky, by day',
-        color=theme["ink"],
-        fontsize=13,
-        fontweight="bold",
-        loc="left",
-        pad=14,
-    )
+    # No in-image title -- the dashboard renders an HTML caption above
+    # this chart instead, so type stays consistent card to card instead
+    # of depending on whatever matplotlib's font happens to be.
     ax.set_ylabel("Number of posts", color=theme["ink_secondary"], fontsize=10)
 
     fig.tight_layout()
     return fig
 
 
-def render_stacked_chart(topic, daily_sentiment, mode):
+def render_stacked_chart(daily_sentiment, mode):
     """Draw one sentiment-stacked chart (light or dark) and return the
     Figure. Caller saves and closes it.
 
@@ -196,14 +190,7 @@ def render_stacked_chart(topic, daily_sentiment, mode):
     ax.tick_params(axis="y", colors=theme["ink_muted"], labelsize=9)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-    ax.set_title(
-        f'"{topic}" mentions on Bluesky, by day',
-        color=theme["ink"],
-        fontsize=13,
-        fontweight="bold",
-        loc="left",
-        pad=14,
-    )
+    # No in-image title -- see the note in render_chart() above.
     ax.set_ylabel("Number of posts", color=theme["ink_secondary"], fontsize=10)
 
     ax.legend(
@@ -247,21 +234,21 @@ def make_chart_for_topic(topic, light_accent=None, dark_accent=None):
         classified = sentiment.classify_posts(topic, model, vectorizer)
         daily_sentiment = bucket_by_day_and_sentiment(classified)
 
-        fig = render_stacked_chart(topic, daily_sentiment, "light")
+        fig = render_stacked_chart(daily_sentiment, "light")
         fig.savefig(light_path, dpi=150)
         plt.close(fig)
 
-        fig = render_stacked_chart(topic, daily_sentiment, "dark")
+        fig = render_stacked_chart(daily_sentiment, "dark")
         fig.savefig(dark_path, dpi=150)
         plt.close(fig)
     else:
         daily_counts = bucket_by_day(timestamps)
 
-        fig = render_chart(topic, daily_counts, light_accent, "light")
+        fig = render_chart(daily_counts, light_accent, "light")
         fig.savefig(light_path, dpi=150)
         plt.close(fig)
 
-        fig = render_chart(topic, daily_counts, dark_accent, "dark")
+        fig = render_chart(daily_counts, dark_accent, "dark")
         fig.savefig(dark_path, dpi=150)
         plt.close(fig)
 

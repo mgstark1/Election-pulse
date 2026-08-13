@@ -22,9 +22,18 @@ import growth
 import sentiment
 from chart import slugify
 from config import load_topics
-from palette import delta_text_color, topic_accent
+from palette import STATUS_CRITICAL, STATUS_GOOD, delta_text_color, topic_accent
 
 OUTPUT_PATH = "index.html"
+
+# An editorial serif for the masthead and topic names, paired with the
+# existing system-sans for data and UI chrome -- the same pairing
+# broadsheet data journalism (FT, The Economist) uses to read as a
+# publication rather than a SaaS dashboard. No web font is loaded (this
+# project has no build step and no external dependencies elsewhere);
+# these are common system serifs, so the fallback chain always resolves
+# to *some* real serif rather than dropping to the browser default.
+SERIF = 'Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", serif'
 
 PAGE_TEMPLATE = """<!doctype html>
 <html lang="en">
@@ -35,24 +44,26 @@ PAGE_TEMPLATE = """<!doctype html>
 <style>
   :root {{
     color-scheme: light;
-    --page: #f9f9f7;
-    --surface: #fcfcfb;
-    --ink: #0b0b0b;
-    --ink-secondary: #52514e;
-    --ink-muted: #898781;
-    --border: rgba(11,11,11,0.10);
+    --page: #f6f4ee;
+    --surface: #fbfaf6;
+    --ink: #16150f;
+    --ink-secondary: #5b5748;
+    --ink-muted: #8c8676;
+    --border: rgba(22, 21, 15, 0.13);
     --delta-up: {delta_up_light};
     --delta-down: {delta_down_light};
+    --status-good: {status_good};
+    --status-critical: {status_critical};
   }}
   @media (prefers-color-scheme: dark) {{
     :root {{
       color-scheme: dark;
-      --page: #0d0d0d;
-      --surface: #1a1a19;
-      --ink: #ffffff;
-      --ink-secondary: #c3c2b7;
-      --ink-muted: #898781;
-      --border: rgba(255,255,255,0.10);
+      --page: #121110;
+      --surface: #1c1b17;
+      --ink: #f5f2ea;
+      --ink-secondary: #c7c2b3;
+      --ink-muted: #8c8676;
+      --border: rgba(255, 255, 255, 0.13);
       --delta-up: {delta_up_dark};
       --delta-down: {delta_down_dark};
     }}
@@ -65,150 +76,195 @@ PAGE_TEMPLATE = """<!doctype html>
     background: var(--page);
     color: var(--ink);
     margin: 0;
-    padding: 2.5rem 1.25rem 4rem;
+    padding: 2.5rem 1.5rem 4rem;
   }}
 
-  .page {{ max-width: 1000px; margin: 0 auto; }}
+  .page {{ max-width: 1120px; margin: 0 auto; }}
 
-  header h1 {{
-    font-size: 1.75rem;
-    margin: 0 0 0.25rem;
-    letter-spacing: -0.02em;
+  .masthead {{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 2.25rem;
+    border-bottom: 1px solid var(--border);
+  }}
+
+  .wordmark {{
+    font-family: {serif};
+    font-size: 2.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.3rem;
+  }}
+
+  .tagline {{
+    font-size: 1rem;
+    color: var(--ink-secondary);
+    margin: 0;
   }}
 
   .updated {{
     color: var(--ink-muted);
-    font-size: 0.875rem;
-    margin: 0 0 2rem;
-  }}
-
-  .roadmap {{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.1rem 1.25rem;
-    margin-bottom: 1.75rem;
-    color: var(--ink-secondary);
-    font-size: 0.9rem;
-    line-height: 1.6;
-  }}
-
-  .roadmap .badge {{
-    display: inline-block;
-    background: var(--ink);
-    color: var(--surface);
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    margin-bottom: 0.65rem;
-  }}
-
-  .roadmap p {{ margin: 0; }}
-
-  .roadmap strong {{
-    color: var(--ink);
-    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.4rem;
+    white-space: nowrap;
   }}
 
   .summary {{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid #2a78d6;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
+    border-left: 3px solid var(--ink);
+    padding: 0.2rem 0 0.2rem 1.25rem;
     margin-bottom: 2.5rem;
-    color: var(--ink-secondary);
-    font-size: 0.95rem;
-    line-height: 1.5;
   }}
 
   .summary .label {{
     display: block;
-    color: var(--ink);
-    font-size: 0.75rem;
+    color: var(--ink-muted);
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.35rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }}
+
+  .summary p {{
+    font-family: {serif};
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 0;
   }}
 
   .grid {{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
   }}
 
   .card {{
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 3px solid var(--accent-light);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 3px;
+    padding: 1.5rem 1.5rem 1.75rem;
+  }}
+
+  .topic-heading {{
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 0.9rem;
+  }}
+
+  .topic-dot {{
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-light);
   }}
   @media (prefers-color-scheme: dark) {{
-    .card {{ border-top-color: var(--accent-dark); }}
+    .topic-dot {{ background: var(--accent-dark); }}
   }}
 
   .card h2 {{
-    margin: 0 0 0.75rem;
-    font-size: 1.1rem;
-  }}
-
-  .stat {{
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }}
-
-  .stat .value {{
-    font-size: 2rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }}
-
-  .stat .unit {{
-    font-size: 0.8rem;
-    color: var(--ink-muted);
-  }}
-
-  .stat .delta {{
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ink-secondary);
-  }}
-
-  .stat .delta.up {{ color: var(--delta-up); }}
-  .stat .delta.down {{ color: var(--delta-down); }}
-
-  .sentiment {{
-    color: var(--ink-secondary);
-    font-size: 0.85rem;
-    margin: 0 0 1rem;
+    font-family: {serif};
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin: 0;
   }}
 
   .trending {{
-    color: var(--delta-up);
-    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 0 0 0.5rem;
+    letter-spacing: 0.06em;
+    color: var(--delta-up);
+    border: 1px solid var(--delta-up);
+    border-radius: 3px;
+    padding: 0.18rem 0.5rem;
+    margin: 0 0 0.85rem;
+  }}
+
+  .stat {{ margin: 0 0 1.1rem; }}
+
+  .stat-primary {{
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }}
+
+  .stat-value {{
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }}
+
+  .stat-label {{
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }}
+
+  .stat-delta {{
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-secondary);
+  }}
+
+  .stat-delta.up {{ color: var(--delta-up); }}
+  .stat-delta.down {{ color: var(--delta-down); }}
+
+  .sentiment-block {{ margin: 0 0 0.25rem; }}
+
+  .sentiment-bar {{
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--border);
+    margin-bottom: 0.45rem;
+  }}
+
+  .sentiment-bar .pos {{ background: var(--status-good); }}
+  .sentiment-bar .neg {{ background: var(--status-critical); }}
+
+  .sentiment-caption {{
+    font-size: 0.78rem;
+    color: var(--ink-secondary);
+    margin: 0;
+  }}
+
+  .chart-caption {{
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    margin: 1.35rem 0 0.5rem;
   }}
 
   .note {{
     color: var(--ink-muted);
     font-size: 0.9rem;
-    margin-bottom: 1rem;
+    font-style: italic;
+    margin: 0 0 1rem;
   }}
 
   .card img {{
     width: 100%;
-    border-radius: 6px;
+    border-radius: 2px;
     display: block;
     cursor: zoom-in;
   }}
@@ -232,7 +288,7 @@ PAGE_TEMPLATE = """<!doctype html>
   #lightbox-overlay img {{
     max-width: 100%;
     max-height: 100%;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }}
 
@@ -257,28 +313,49 @@ PAGE_TEMPLATE = """<!doctype html>
     font-size: 0.9rem;
     margin: 0;
   }}
+
+  .site-footer {{
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }}
+
+  .site-footer .footer-label {{
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-secondary);
+  }}
+
+  @media (max-width: 480px) {{
+    .wordmark {{ font-size: 1.7rem; }}
+    body {{ padding: 1.75rem 1rem 3rem; }}
+  }}
 </style>
 </head>
 <body>
 <div class="page">
-<header>
-  <h1>Election Pulse</h1>
-  <p class="updated">Last updated: {updated_at}</p>
+<header class="masthead">
+  <div>
+    <h1 class="wordmark">Election Pulse</h1>
+    <p class="tagline">The UK's political conversation, in real time.</p>
+  </div>
+  <p class="updated">Updated {updated_at}</p>
 </header>
-<div class="roadmap">
-  <span class="badge">Phase 1</span>
-  <p>This dashboard currently tracks raw mention volume for each topic on
-  Bluesky -- an early, working version of a bigger plan. Coming next:
-  <strong>richer AI-driven analysis</strong> explaining <em>why</em> a
-  topic is trending (not just a one-line summary),
-  <strong>more topic categories</strong>, and
-  <strong>growth-rate rankings</strong> to surface emerging stories
-  faster than raw volume alone.</p>
-</div>
 {summary_html}
 <div class="grid">
 {sections}
 </div>
+<footer class="site-footer">
+  <p><span class="footer-label">Phase 1</span> &mdash; This dashboard currently
+  tracks mention volume, growth and sentiment for each topic on Bluesky, an
+  early, working version of a bigger plan. Coming next: richer AI-driven
+  analysis explaining <em>why</em> a topic is trending, and more topic
+  categories.</p>
+</footer>
 </div>
 <div id="lightbox-overlay">
   <button id="lightbox-close" aria-label="Close">&times;</button>
@@ -318,7 +395,7 @@ PAGE_TEMPLATE = """<!doctype html>
 
 
 def render_stat(growth_result):
-    """Render the stat-tile markup (value + delta, or a plain note when
+    """Render the stat-block markup (value + delta, or a plain note when
     there isn't enough data yet for a number)."""
     status = growth_result["status"]
 
@@ -329,17 +406,21 @@ def render_stat(growth_result):
         direction_class = "up" if is_up else "down"
         return (
             '<div class="stat">'
-            f'<span class="value">{growth_result["today_count"]}</span>'
-            '<span class="unit">mentions today</span>'
-            f'<span class="delta {direction_class}">{arrow} {sign}{growth_result["growth_pct"]:.0f}% vs yesterday</span>'
+            '<div class="stat-primary">'
+            f'<span class="stat-value">{growth_result["today_count"]}</span>'
+            '<span class="stat-label">mentions today</span>'
+            "</div>"
+            f'<span class="stat-delta {direction_class}">{arrow} {sign}{growth_result["growth_pct"]:.0f}% vs yesterday</span>'
             "</div>"
         )
     if status == "zero_yesterday":
         return (
             '<div class="stat">'
-            f'<span class="value">{growth_result["today_count"]}</span>'
-            '<span class="unit">mentions today</span>'
-            '<span class="delta">no baseline (0 yesterday)</span>'
+            '<div class="stat-primary">'
+            f'<span class="stat-value">{growth_result["today_count"]}</span>'
+            '<span class="stat-label">mentions today</span>'
+            "</div>"
+            '<span class="stat-delta">no baseline (0 yesterday)</span>'
             "</div>"
         )
     if status == "insufficient_history":
@@ -347,14 +428,28 @@ def render_stat(growth_result):
     return '<p class="note">No posts collected yet.</p>'
 
 
-def render_sentiment(sentiment_result):
-    """Render the sentiment line for a topic, or nothing if there's no
-    result to show yet (model not trained, or no posts)."""
+def render_sentiment_bar(sentiment_result):
+    """Render sentiment as a compact positive/negative proportion bar
+    plus its underlying counts, or nothing if there's no result to show
+    yet (model not trained, or no posts). Same numbers
+    render_sentiment() used to print as plain text -- just a faster
+    shape to scan across cards."""
     if sentiment_result is None or sentiment_result["status"] != "ok":
         return ""
+
+    positive = sentiment_result["positive"]
+    negative = sentiment_result["negative"]
+    total = sentiment_result["total"]
+    positive_pct = 100 * positive / total
+
     return (
-        f'<p class="sentiment">{sentiment_result["positive"]} positive · '
-        f'{sentiment_result["negative"]} negative</p>'
+        '<div class="sentiment-block">'
+        '<div class="sentiment-bar">'
+        f'<span class="pos" style="width: {positive_pct:.1f}%"></span>'
+        f'<span class="neg" style="width: {100 - positive_pct:.1f}%"></span>'
+        "</div>"
+        f'<p class="sentiment-caption">{positive} positive &middot; {negative} negative</p>'
+        "</div>"
     )
 
 
@@ -392,6 +487,7 @@ def render_topic_section(
         f"{topic_escaped} mentions over time",
         "No chart yet -- run fetch_posts.py for this topic first.",
     )
+    mentions_block = f'<p class="chart-caption">Mentions, by day</p>\n{mentions_chart_html}'
 
     # No fallback message for the sentiment trend chart -- unlike the
     # mentions chart, it's expected to be absent for a while (needs 2+
@@ -402,18 +498,28 @@ def render_topic_section(
         f"data/sentiment_over_time_{slug}_dark.png",
         f"{topic_escaped} sentiment over time",
     )
+    sentiment_chart_block = (
+        f'<p class="chart-caption">Sentiment, % positive over time</p>\n{sentiment_chart_html}'
+        if sentiment_chart_html
+        else ""
+    )
 
-    trending_html = '<p class="trending">&uarr; Fastest growing</p>' if is_top_growth else ""
+    trending_html = (
+        '<p class="trending">&uarr; Fastest growing</p>' if is_top_growth else ""
+    )
 
     style = f"--accent-light: {light_accent}; --accent-dark: {dark_accent};"
     return f"""
     <div class="card" style="{style}">
-      <h2>{html.escape(topic.capitalize())}</h2>
+      <div class="topic-heading">
+        <span class="topic-dot"></span>
+        <h2>{html.escape(topic.capitalize())}</h2>
+      </div>
       {trending_html}
       {render_stat(growth_result)}
-      {render_sentiment(sentiment_result)}
-      {mentions_chart_html}
-      {sentiment_chart_html}
+      {render_sentiment_bar(sentiment_result)}
+      {mentions_block}
+      {sentiment_chart_block}
     </div>
     """
 
@@ -474,7 +580,7 @@ def render_page(topics, growth_results, sentiment_results=None, summary=None):
     updated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     summary_html = (
-        f'<div class="summary"><span class="label">AI summary</span>{html.escape(summary)}</div>'
+        f'<div class="summary"><span class="label">AI summary</span><p>{html.escape(summary)}</p></div>'
         if summary
         else ""
     )
@@ -483,10 +589,13 @@ def render_page(topics, growth_results, sentiment_results=None, summary=None):
         updated_at=updated_at,
         summary_html=summary_html,
         sections=sections,
+        serif=SERIF,
         delta_up_light=delta_text_color("up", "light"),
         delta_up_dark=delta_text_color("up", "dark"),
         delta_down_light=delta_text_color("down", "light"),
         delta_down_dark=delta_text_color("down", "dark"),
+        status_good=STATUS_GOOD,
+        status_critical=STATUS_CRITICAL,
     )
 
 
