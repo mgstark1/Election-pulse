@@ -152,7 +152,7 @@ def render_stacked_chart(topic, hourly_sentiment, mode):
     """Draw one sentiment-stacked chart (light or dark) and return the
     Figure. Caller saves and closes it.
 
-    Each hour's bar is split into a positive (bottom) and negative
+    Each hour's bar is split into a negative (bottom) and positive
     (top) segment, using the dataviz skill's fixed status pair (good
     green / critical red -- the same meaning as the sentiment-over-time
     line chart and the growth delta text elsewhere on the dashboard).
@@ -171,12 +171,12 @@ def render_stacked_chart(topic, hourly_sentiment, mode):
     # (and neighboring bars) instead of a border, per the mark spec's
     # "surface gap" -- a stroke would add ink that isn't data.
     ax.bar(
-        labels, positive, width=BAR_WIDTH, color=STATUS_GOOD,
-        edgecolor=theme["surface"], linewidth=1, label="Positive",
+        labels, negative, width=BAR_WIDTH, color=STATUS_CRITICAL,
+        edgecolor=theme["surface"], linewidth=1, label="Negative",
     )
     ax.bar(
-        labels, negative, width=BAR_WIDTH, bottom=positive, color=STATUS_CRITICAL,
-        edgecolor=theme["surface"], linewidth=1, label="Negative",
+        labels, positive, width=BAR_WIDTH, bottom=negative, color=STATUS_GOOD,
+        edgecolor=theme["surface"], linewidth=1, label="Positive",
     )
 
     for side in ("top", "right", "left"):
