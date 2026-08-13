@@ -3,7 +3,7 @@ chart.py
 
 A simple script to check that our data collection is working, by
 drawing a chart of how many posts we've saved for each tracked topic,
-grouped by hour.
+grouped by day.
 
 This is just a sanity check for this early phase of the project -- not
 the fancy dashboard described in the long-term vision. That comes later.
@@ -20,7 +20,7 @@ spread out over a few hours) so there's actually something to see.
 
 Bars are stacked and colored by sentiment (positive/negative) when a
 trained sentiment model is available (see models/README.md); otherwise
-they fall back to a single accent-colored bar per hour, same as before
+they fall back to a single accent-colored bar per day, same as before
 sentiment.py existed.
 """
 
@@ -66,11 +66,12 @@ def load_post_timestamps(topic):
     return [row[0] for row in rows]
 
 
-def bucket_by_hour(timestamps):
-    """Count how many posts fall into each hour, e.g. "2026-07-23 10:00".
+def bucket_by_day(timestamps):
+    """Count how many posts fall into each calendar day (UTC), e.g.
+    "2026-07-23".
 
-    Returns a dict sorted by time, like:
-        {"2026-07-23 09:00": 3, "2026-07-23 10:00": 7, ...}
+    Returns a dict sorted by date, like:
+        {"2026-07-23": 42, "2026-07-24": 57, ...}
     """
     counts = Counter()
     for ts in timestamps:
@@ -78,26 +79,26 @@ def bucket_by_hour(timestamps):
         # fromisoformat() doesn't understand the trailing "Z", so we
         # swap it for "+00:00" (which means the same thing: UTC).
         dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        hour_bucket = dt.strftime("%Y-%m-%d %H:00")
-        counts[hour_bucket] += 1
+        day_bucket = dt.strftime("%Y-%m-%d")
+        counts[day_bucket] += 1
 
     # Sort by the bucket label so the chart reads left-to-right in time order.
     return dict(sorted(counts.items()))
 
 
-def bucket_by_hour_and_sentiment(classified):
-    """Count positive/negative posts per hour bucket, from a
+def bucket_by_day_and_sentiment(classified):
+    """Count positive/negative posts per calendar day (UTC), from a
     sentiment.classify_posts() result (a list of (created_at,
     prediction) pairs).
 
-    Returns a dict sorted by time, like:
-        {"2026-07-23 09:00": {"positive": 2, "negative": 1}, ...}
+    Returns a dict sorted by date, like:
+        {"2026-07-23": {"positive": 2, "negative": 1}, ...}
     """
     buckets = {}
     for created_at, prediction in classified:
         dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-        hour_bucket = dt.strftime("%Y-%m-%d %H:00")
-        counts = buckets.setdefault(hour_bucket, {"positive": 0, "negative": 0})
+        day_bucket = dt.strftime("%Y-%m-%d")
+        counts = buckets.setdefault(day_bucket, {"positive": 0, "negative": 0})
         if prediction == 1:
             counts["positive"] += 1
         else:
@@ -106,12 +107,15 @@ def bucket_by_hour_and_sentiment(classified):
     return dict(sorted(buckets.items()))
 
 
-def render_chart(topic, hourly_counts, accent, mode):
+def render_chart(topic, daily_counts, accent, mode):
     """Draw one chart (light or dark) and return the Figure. Caller
     saves and closes it."""
     theme = THEME[mode]
-    labels = list(hourly_counts.keys())
-    values = list(hourly_counts.values())
+    # Re-formatted from "2026-07-23" to "Jul 23" -- daily buckets mean
+    # far fewer bars than the old hourly version, so a short label reads
+    # cleanly at 45 degrees without the redundant year and time-of-day.
+    labels = [datetime.strptime(d, "%Y-%m-%d").strftime("%b %d") for d in daily_counts.keys()]
+    values = list(daily_counts.values())
 
     fig, ax = plt.subplots(figsize=(10, 5))
     fig.patch.set_facecolor(theme["surface"])
@@ -135,7 +139,7 @@ def render_chart(topic, hourly_counts, accent, mode):
 
     # A single series needs no legend -- the title already names it.
     ax.set_title(
-        f'"{topic}" mentions on Bluesky, by hour',
+        f'"{topic}" mentions on Bluesky, by day',
         color=theme["ink"],
         fontsize=13,
         fontweight="bold",
@@ -148,20 +152,21 @@ def render_chart(topic, hourly_counts, accent, mode):
     return fig
 
 
-def render_stacked_chart(topic, hourly_sentiment, mode):
+def render_stacked_chart(topic, daily_sentiment, mode):
     """Draw one sentiment-stacked chart (light or dark) and return the
     Figure. Caller saves and closes it.
 
-    Each hour's bar is split into a negative (bottom) and positive
+    Each day's bar is split into a negative (bottom) and positive
     (top) segment, using the dataviz skill's fixed status pair (good
     green / critical red -- the same meaning as the sentiment-over-time
     line chart and the growth delta text elsewhere on the dashboard).
     Two series now share this chart, so -- unlike the single-accent
     version -- it needs a legend."""
     theme = THEME[mode]
-    labels = list(hourly_sentiment.keys())
-    positive = [counts["positive"] for counts in hourly_sentiment.values()]
-    negative = [counts["negative"] for counts in hourly_sentiment.values()]
+    # Re-formatted from "2026-07-23" to "Jul 23" -- see render_chart().
+    labels = [datetime.strptime(d, "%Y-%m-%d").strftime("%b %d") for d in daily_sentiment.keys()]
+    positive = [counts["positive"] for counts in daily_sentiment.values()]
+    negative = [counts["negative"] for counts in daily_sentiment.values()]
 
     fig, ax = plt.subplots(figsize=(10, 5))
     fig.patch.set_facecolor(theme["surface"])
@@ -192,7 +197,7 @@ def render_stacked_chart(topic, hourly_sentiment, mode):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     ax.set_title(
-        f'"{topic}" mentions on Bluesky, by hour',
+        f'"{topic}" mentions on Bluesky, by day',
         color=theme["ink"],
         fontsize=13,
         fontweight="bold",
@@ -240,23 +245,23 @@ def make_chart_for_topic(topic, light_accent=None, dark_accent=None):
     model, vectorizer = sentiment.load_model()
     if model is not None:
         classified = sentiment.classify_posts(topic, model, vectorizer)
-        hourly_sentiment = bucket_by_hour_and_sentiment(classified)
+        daily_sentiment = bucket_by_day_and_sentiment(classified)
 
-        fig = render_stacked_chart(topic, hourly_sentiment, "light")
+        fig = render_stacked_chart(topic, daily_sentiment, "light")
         fig.savefig(light_path, dpi=150)
         plt.close(fig)
 
-        fig = render_stacked_chart(topic, hourly_sentiment, "dark")
+        fig = render_stacked_chart(topic, daily_sentiment, "dark")
         fig.savefig(dark_path, dpi=150)
         plt.close(fig)
     else:
-        hourly_counts = bucket_by_hour(timestamps)
+        daily_counts = bucket_by_day(timestamps)
 
-        fig = render_chart(topic, hourly_counts, light_accent, "light")
+        fig = render_chart(topic, daily_counts, light_accent, "light")
         fig.savefig(light_path, dpi=150)
         plt.close(fig)
 
-        fig = render_chart(topic, hourly_counts, dark_accent, "dark")
+        fig = render_chart(topic, daily_counts, dark_accent, "dark")
         fig.savefig(dark_path, dpi=150)
         plt.close(fig)
 
