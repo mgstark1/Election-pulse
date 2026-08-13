@@ -191,6 +191,15 @@ PAGE_TEMPLATE = """<!doctype html>
     margin: 0 0 1rem;
   }}
 
+  .trending {{
+    color: var(--delta-up);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.5rem;
+  }}
+
   .note {{
     color: var(--ink-muted);
     font-size: 0.9rem;
@@ -300,7 +309,9 @@ def render_chart_picture(light_path, dark_path, alt, missing_message=None):
     return f'<img src="{light_path}" alt="{alt}" loading="lazy">'
 
 
-def render_topic_section(topic, growth_result, sentiment_result, light_accent, dark_accent):
+def render_topic_section(
+    topic, growth_result, sentiment_result, light_accent, dark_accent, is_top_growth=False
+):
     slug = slugify(topic)
     topic_escaped = html.escape(topic)
 
@@ -321,10 +332,13 @@ def render_topic_section(topic, growth_result, sentiment_result, light_accent, d
         f"{topic_escaped} sentiment over time",
     )
 
+    trending_html = '<p class="trending">&uarr; Fastest growing</p>' if is_top_growth else ""
+
     style = f"--accent-light: {light_accent}; --accent-dark: {dark_accent};"
     return f"""
     <div class="card" style="{style}">
       <h2>{html.escape(topic.capitalize())}</h2>
+      {trending_html}
       {render_stat(growth_result)}
       {render_sentiment(sentiment_result)}
       {mentions_chart_html}
@@ -333,19 +347,58 @@ def render_topic_section(topic, growth_result, sentiment_result, light_accent, d
     """
 
 
+def rank_topics_by_growth(topics, growth_by_topic):
+    """Order topics fastest-growing first, so emerging stories surface
+    above flat/declining ones instead of always sitting in topics.json
+    order. Topics without a comparable growth_pct (no data yet,
+    insufficient history, or no baseline) sort after every "ok" topic,
+    keeping their original relative order (Python's sort is stable).
+
+    Returns (ranked_topics, top_growth_topic) -- top_growth_topic is
+    None unless some topic actually grew (growth_pct > 0), so a page
+    where every topic is flat or shrinking gets no "fastest growing"
+    badge at all.
+    """
+    def rank_key(topic):
+        result = growth_by_topic.get(topic, {"status": "no_data"})
+        if result["status"] == "ok":
+            return (0, -result["growth_pct"])
+        return (1, 0)
+
+    ranked_topics = sorted(topics, key=rank_key)
+
+    top_growth_topic = None
+    best_growth_pct = 0
+    for topic in topics:
+        result = growth_by_topic.get(topic, {"status": "no_data"})
+        if result["status"] == "ok" and result["growth_pct"] > best_growth_pct:
+            best_growth_pct = result["growth_pct"]
+            top_growth_topic = topic
+
+    return ranked_topics, top_growth_topic
+
+
 def render_page(topics, growth_results, sentiment_results=None, summary=None):
     growth_by_topic = {r["topic"]: r for r in growth_results}
     sentiment_by_topic = {r["topic"]: r for r in (sentiment_results or [])}
+
+    ranked_topics, top_growth_topic = rank_topics_by_growth(topics, growth_by_topic)
+
+    # Colors stay tied to each topic's position in topics.json (its
+    # identity), not its rank -- otherwise a topic's color would shift
+    # day to day as growth rates change places. See palette.py.
+    accent_index = {topic: i for i, topic in enumerate(topics)}
 
     sections = "\n".join(
         render_topic_section(
             topic,
             growth_by_topic[topic],
             sentiment_by_topic.get(topic),
-            topic_accent(i, "light"),
-            topic_accent(i, "dark"),
+            topic_accent(accent_index[topic], "light"),
+            topic_accent(accent_index[topic], "dark"),
+            is_top_growth=(topic == top_growth_topic),
         )
-        for i, topic in enumerate(topics)
+        for topic in ranked_topics
     )
     updated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 

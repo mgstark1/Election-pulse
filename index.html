@@ -163,6 +163,15 @@
     margin: 0 0 1rem;
   }
 
+  .trending {
+    color: var(--delta-up);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.5rem;
+  }
+
   .note {
     color: var(--ink-muted);
     font-size: 0.9rem;
@@ -187,7 +196,7 @@
 <div class="page">
 <header>
   <h1>Election Pulse</h1>
-  <p class="updated">Last updated: 2026-08-13 08:28 UTC</p>
+  <p class="updated">Last updated: 2026-08-13 12:54 UTC</p>
 </header>
 <div class="roadmap">
   <span class="badge">Phase 1</span>
@@ -202,26 +211,9 @@
 
 <div class="grid">
 
-    <div class="card" style="--accent-light: #2a78d6; --accent-dark: #3987e5;">
-      <h2>Immigration</h2>
-      <div class="stat"><span class="value">591</span><span class="unit">mentions today</span><span class="delta down">▼ -82% vs yesterday</span></div>
-      <p class="sentiment">6352 positive · 5170 negative</p>
-      <picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_immigration.png" alt="immigration sentiment over time" loading="lazy"></picture>
-    </div>
-    
-
-    <div class="card" style="--accent-light: #eb6834; --accent-dark: #d95926;">
-      <h2>Healthcare</h2>
-      <div class="stat"><span class="value">793</span><span class="unit">mentions today</span><span class="delta down">▼ -77% vs yesterday</span></div>
-      <p class="sentiment">6906 positive · 4678 negative</p>
-      <picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
-      <picture><source srcset="data/sentiment_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_healthcare.png" alt="healthcare sentiment over time" loading="lazy"></picture>
-    </div>
-    
-
     <div class="card" style="--accent-light: #1baf7a; --accent-dark: #199e70;">
       <h2>Economy</h2>
+      
       <div class="stat"><span class="value">929</span><span class="unit">mentions today</span><span class="delta down">▼ -74% vs yesterday</span></div>
       <p class="sentiment">7452 positive · 4186 negative</p>
       <picture><source srcset="data/mentions_over_time_economy_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_economy.png" alt="economy mentions over time" loading="lazy"></picture>
@@ -231,10 +223,31 @@
 
     <div class="card" style="--accent-light: #eda100; --accent-dark: #c98500;">
       <h2>Tax</h2>
+      
       <div class="stat"><span class="value">1316</span><span class="unit">mentions today</span><span class="delta down">▼ -74% vs yesterday</span></div>
       <p class="sentiment">5525 positive · 5492 negative</p>
       <picture><source srcset="data/mentions_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_tax.png" alt="Tax mentions over time" loading="lazy"></picture>
       <picture><source srcset="data/sentiment_over_time_tax_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_tax.png" alt="Tax sentiment over time" loading="lazy"></picture>
+    </div>
+    
+
+    <div class="card" style="--accent-light: #eb6834; --accent-dark: #d95926;">
+      <h2>Healthcare</h2>
+      
+      <div class="stat"><span class="value">793</span><span class="unit">mentions today</span><span class="delta down">▼ -77% vs yesterday</span></div>
+      <p class="sentiment">6906 positive · 4678 negative</p>
+      <picture><source srcset="data/mentions_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_healthcare.png" alt="healthcare mentions over time" loading="lazy"></picture>
+      <picture><source srcset="data/sentiment_over_time_healthcare_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_healthcare.png" alt="healthcare sentiment over time" loading="lazy"></picture>
+    </div>
+    
+
+    <div class="card" style="--accent-light: #2a78d6; --accent-dark: #3987e5;">
+      <h2>Immigration</h2>
+      
+      <div class="stat"><span class="value">591</span><span class="unit">mentions today</span><span class="delta down">▼ -82% vs yesterday</span></div>
+      <p class="sentiment">6352 positive · 5170 negative</p>
+      <picture><source srcset="data/mentions_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/mentions_over_time_immigration.png" alt="immigration mentions over time" loading="lazy"></picture>
+      <picture><source srcset="data/sentiment_over_time_immigration_dark.png" media="(prefers-color-scheme: dark)"><img src="data/sentiment_over_time_immigration.png" alt="immigration sentiment over time" loading="lazy"></picture>
     </div>
     
 </div>
